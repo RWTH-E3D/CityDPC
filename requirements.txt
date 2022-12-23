@@ -1,0 +1,4 @@
+numpy
+lxml
+scipy
+shapley
