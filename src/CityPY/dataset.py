@@ -42,14 +42,14 @@ class Dataset():
         for building_E in buildings_in_file:
             building_id = building_E.attrib['{http://www.opengis.net/gml}id']
             new_building = Building(building_id)
-            new_building.load_data_from_element(building_E, nsmap)
+            new_building.load_data_from_xml_element(building_E, nsmap)
 
             bps_in_bldg = building_E.findall(
                 'bldg:consistsOfBuildingPart/bldg:BuildingPart', nsmap)
             for bp_E in bps_in_bldg:
                 bp_id = bp_E.attrib['{http://www.opengis.net/gml}id']
                 new_building_part = BuildingPart(bp_id, building_id)
-                new_building_part.load_data_from_element(bp_E, nsmap)
+                new_building_part.load_data_from_xml_element(bp_E, nsmap)
                 new_building.building_parts.append(new_building_part)
 
             self.buildings.append(new_building)
