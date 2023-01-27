@@ -1,5 +1,6 @@
 import numpy as np
 from shapely import geometry as slyGeom
+import shapely
 
 import vectorFunctions as vF
 
@@ -45,9 +46,26 @@ def find_party_walls(buildingLike_0: object, buildingLike_1: object):
                             "/" + buildingLike_0.gml_id
                         id_1 = buildingLike_1.gml_id if not buildingLike_1.is_building_part else buildingLike_1.parent_gml_id + \
                             "/" + buildingLike_1.gml_id
-                        party_walls.append(
-                            [id_0, gml_id_0, id_1, gml_id_1, intersection.area])
-                        # party_walls.append([gml_id_0, gml_id_1, intersection.area])
+                        if type(intersection) == shapely.Polygon:
+                            xx, yy = intersection.exterior.xy
+                            n = []
+                            for x, y in zip(xx.tolist(), yy.tolist()):
+                                n.append([x, poly_0_rotated.mean(axis=0)[1], y])
+                            np.set_printoptions(suppress=True)
+                            contact = np.dot(np.array(n), np.linalg.inv(rotation_matrix))
+                            party_walls.append(
+                                [id_0, gml_id_0, id_1, gml_id_1, intersection.area, contact])
+                        elif type(intersection) == shapely.GeometryCollection:
+                            for section in intersection.geoms:
+                                if type(section) == shapely.Polygon and section.area > 5:
+                                    xx, yy = section.exterior.xy
+                                    n = []
+                                    for x, y in zip(xx.tolist(), yy.tolist()):
+                                        n.append([x, poly_0_rotated.mean(axis=0)[1], y])
+                                    np.set_printoptions(suppress=True)
+                                    contact = np.dot(np.array(n), np.linalg.inv(rotation_matrix))
+                                    party_walls.append(
+                                        [id_0, gml_id_0, id_1, gml_id_1, intersection.area, contact])
     return party_walls
 
 def _coor_dict_to_normvector_dict(surface_dict: dict) -> dict:
