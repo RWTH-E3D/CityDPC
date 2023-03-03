@@ -7,8 +7,7 @@ import gmlUtils
 
 
 class _AbstractBuilding():
-    """
-    contains all methods and properties that are use by buildings and building parts
+    """contains all methods and properties that are use by buildings and building parts
     """
 
     def __init__(self, id: str) -> None:
@@ -16,11 +15,20 @@ class _AbstractBuilding():
         self.walls = {}
         self.roofs = {}
         self.grounds = {}
+        self.closure = {}
         self.roof_volume = None
 
     def load_data_from_xml_element(self, element: ET.Element, nsmap: dict) -> None:
-        """collects data from from lxml.etree element"""
-        self.walls, self.roofs, self.grounds = get_building_surfaces_from_xml_element(
+        """gathers information from a single abstract building from given lxml element
+
+        Parameters
+        ----------
+        element : ET.Element
+            either building or building part
+        nsmap : dict
+            namespace map of the root xml/gml file in form of a dicitionary 
+        """
+        self.walls, self.roofs, self.grounds, self.closure = get_building_surfaces_from_xml_element(
             element, nsmap)
 
         if self.roofs != {}:
@@ -37,18 +45,31 @@ class _AbstractBuilding():
                 self.roof_volume += round(hull.volume, 3)
 
     def has_geometry(self) -> bool:
-        """checks if walls, roofs and grounds are in building"""
-        if self.walls != {} and self.roofs != {} and self.grounds != {}:
+        """checks if abstractBuilding has geometry
+
+        to return true the building needs to at least one roof geometry
+        one ground geometry and either a wall or closure geomety
+
+        Returns
+        -------
+        bool
+            
+        """
+        if self.roofs != {} and self.grounds != {} and (self.walls != {} or self.closure != {}):
             return True
-        elif self.walls == {} and self.roofs == {} and self.grounds == {}:
-            return False
         else:
             return False
 
 
 class Building(_AbstractBuilding):
-    """
-    class to store basic information of a CityGML building
+    """extends _AbstractBuilding class
+
+    contains attributes and functions specific to Buildings
+
+    Parameters
+    ----------
+    _AbstractBuilding : _type_
+
     """
 
     def __init__(self, id: str) -> None:
@@ -57,7 +78,13 @@ class Building(_AbstractBuilding):
         self.is_building_part = False
 
     def has_building_parts(self) -> bool:
-        """returns True if the building has building parts and False if not"""
+        """checks if the building has building parts
+
+        Returns
+        -------
+        bool
+            true if building has building parts
+        """
         return self.building_parts != []
 
     def building_part_ids(self) -> list:
@@ -66,8 +93,14 @@ class Building(_AbstractBuilding):
 
 
 class BuildingPart(_AbstractBuilding):
-    """
-    class to store basic information of a CityGML building part
+    """extends _AbstractBuilding class
+
+    contains attributes and functions specific to Buildings
+
+    Parameters
+    ----------
+    _AbstractBuilding : _type_
+
     """
 
     def __init__(self, id: str, parent_id: str) -> None:
@@ -78,8 +111,22 @@ class BuildingPart(_AbstractBuilding):
 
 
 
-def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> tuple[list, list, list]:
-    """gathers surfaces from element and categories them"""
+def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> tuple[dict, dict, dict, dict]:
+    """gathers surfaces from element and categories them
+
+    Parameters
+    ----------
+    element : ET.Element
+        lxml element of an abstracBuilding
+    nsmap : dict
+       namespace map of the root xml/gml file in form of a dicitionary 
+
+    Returns
+    -------
+    tuple[dict, dict, dict, dict]
+        dictionaries are in the order: walls, roofs, grounds, closure
+        the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
+    """
     # check if building is LoD1
     lod1Solid_E = element.find('bldg:lod1Solid', nsmap)
     if lod1Solid_E != None:
@@ -123,7 +170,7 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         del all_poylgons[roof_id]
         ground = {ground_id: all_poylgons[ground_id]}
         del all_poylgons[ground_id]
-        return all_poylgons, roof, ground
+        return all_poylgons, roof, ground, []
 
     # everything greater than LoD1
     walls = get_surface_dict_from_element(
@@ -132,34 +179,63 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         element, nsmap, "bldg:boundedBy/bldg:RoofSurface")
     grounds = get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:GroundSurface")
+    closure = get_surface_dict_from_element(
+        element, nsmap, "bldg:boundedBy/bldg:ClosureSurface")
 
-    return walls, roofs, grounds
+    return walls, roofs, grounds, closure
 
 
-def get_polygon_coordinates_from_element(element: ET.Element, nsmap: dict) -> list:
-    """
-    searched the given element for gml:posList and gml:pos elements and
-    returns poylgon id and a 2D array of the given coordinates
+def get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dict) -> np.ndarray:
+    """search the element for coordinates
+
+    takes coordinates from both gml:posList and gml:pos elements
+    returns an array of the 3D coordinates
+
+    Parameters
+    ----------
+    polygon_element : ET.Element
+        lxml element of a gml:polygon
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
+
+    Returns
+    -------
+    np.ndarray
+       numpy array of coordinates in 3D
     """
     polygon = []
     # searching for list of coordinates
-    posList_E = element.find('.//gml:posList', nsmap)
+    posList_E = polygon_element.find('.//gml:posList', nsmap)
     if posList_E != None:
         polyStr = posList_E.text
     else:
         # searching for individual coordinates in polygon
-        pos_Es = element.findall('.//gml:pos', nsmap)
+        pos_Es = polygon_element.findall('.//gml:pos', nsmap)
         for pos_E in pos_Es:
             polygon.append(pos_E.text)
         polyStr = ' '.join(polygon)
     return gmlUtils.get_3D_posList_from_str(polyStr)
 
 
-def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = None) -> dict:
-    """
-    creates a dictionary from surfaces  with target_str (e.g. 'bldg:boundedBy/bldg:RoofSurface')
-    element should point to a _AbstractBuiling like element
-    where the gml:id of the surface is the index and the value is a 2D array of coordinates
+def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
+    """creates a dictionary from surfaces of lxml element
+    
+
+    Parameters
+    ----------
+    element : ET.Element
+        lxml element of an abstracBuilding
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
+    target_str : str
+        element to take coordinates from e.g. 'bldg:boundedBy/bldg:RoofSurface'
+    id_str : str, optional
+        base string for dict index, by default ""
+
+    Returns
+    -------
+    dict
+        key-value pairing of gml:id of the surface and array of coordinates
     """
     result = {}
     if not id_str:

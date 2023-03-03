@@ -80,6 +80,7 @@ class Dataset():
                                 {"poly_id": key, "coor": coordiantes, "parent": b_part})
 
             # self collision check
+            # this includes all walls of the building (and building parts) geometry 
             for j, poly_0 in enumerate(polys_in_building_0):
                 p_0 = self._create_buffered_polygon(poly_0["coor"])
                 for poly_1 in polys_in_building_0[j+1:]:
@@ -121,10 +122,10 @@ class Dataset():
                                             self.party_walls.extend(
                                                 party_walls)
                                         break
+        return self.party_walls
 
     def _create_buffered_polygon(self, coordinates: np.ndarray, buffer: float = 0.15) -> slyGeom.Polygon:
         """creates a buffered shapely polygon"""
         poly = slyGeom.Polygon(coordinates)
         return poly.buffer(buffer)
-
 
