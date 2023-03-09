@@ -39,7 +39,7 @@ def find_party_walls(buildingLike_0: object, buildingLike_1: object) -> list:
                         delta_x = t_surf_0[0][0] - t_surf_0[2][0]
                         delta_y = t_surf_0[0][1] - t_surf_0[2][1]
 
-                    rad_angle = -math.atan2(delta_y, delta_x) if delta_x != 0 else 0
+                    rad_angle = -math.atan2(delta_y, delta_x) if delta_x != 0 else math.pi/2
                     target_y = t_surf_0[0][1]
                     rot_point = t_surf_0[0]
                     poly_0_rotated = vF.rotate_polygon_around_point_in_x_y(rot_point, t_surf_0, rad_angle)
