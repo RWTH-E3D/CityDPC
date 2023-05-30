@@ -11,24 +11,26 @@ def find_party_walls(buildingLike_0: object, buildingLike_1: object) -> list:
     party_walls = []
     b_0_surfaces = {**buildingLike_0.walls, **buildingLike_0.closure}
     b_1_surfaces = {**buildingLike_1.walls, **buildingLike_1.closure}
-    b_0_normvectors = _coor_dict_to_normvector_dict(b_0_surfaces)
-    b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
-    for gml_id_0, vector_0 in b_0_normvectors.items():
-        for gml_id_1, vector_1 in b_1_normvectors.items():
+    # b_0_normvectors = _coor_dict_to_normvector_dict(b_0_surfaces)
+    # b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
+    for gml_id_0, surface_0 in b_0_surfaces.items():
+        for gml_id_1, surface_1 in b_1_surfaces.items():
             # consider walls if there norm vectors equal or inverse or don't differ more than 15 degrees (= 0.9659 cos(rad))
-            if np.array_equal(vector_0, vector_1) or np.array_equal(vector_0, -vector_1) or (np.abs(np.dot(vector_0, vector_1)) > 0.9659):
+            if np.array_equal(surface_0.normal_uni, surface_1.normal_uni) or \
+               np.array_equal(surface_0.normal_uni, -surface_1.normal_uni) or \
+               np.abs(np.dot(surface_0.normal_uni, surface_1.normal_uni)) > 0.9659:
                 # check if rotation is needed
-                if np.array_equal(vector_0, np.array([0, 1, 0])) or np.array_equal(vector_0, -np.array([0, 1, 0])):
+                if np.array_equal(surface_0.normal_uni, np.array([0, 1, 0])) or np.array_equal(surface_0.normal_uni, -np.array([0, 1, 0])):
                     # rotation not needed
-                    poly_0_rotated = b_0_surfaces[gml_id_0]
-                    poly_1_rotated = b_1_surfaces[gml_id_1]
+                    poly_0_rotated = b_0_surfaces[gml_id_0].gml_surface_2array
+                    poly_1_rotated = b_1_surfaces[gml_id_1].gml_surface_2array
                     rad_angle = None
-                    target_y = b_0_surfaces[gml_id_0][0][1]
+                    target_y = b_0_surfaces[gml_id_0].gml_surface_2array[0][1]
                     rot_point = None
                 else:
                     # needs to be rotated
-                    t_surf_0 = b_0_surfaces[gml_id_0]
-                    t_surf_1 = b_1_surfaces[gml_id_1]
+                    t_surf_0 = b_0_surfaces[gml_id_0].gml_surface_2array
+                    t_surf_1 = b_1_surfaces[gml_id_1].gml_surface_2array
                     # get delta in x- and y-direction for roation
                     # make sure that the vector between the 1st and 2nd point isn't [0 0 *]
                     if not (t_surf_0[0][0] == t_surf_0[1][0] and t_surf_0[0][1] == t_surf_0[1][1]):

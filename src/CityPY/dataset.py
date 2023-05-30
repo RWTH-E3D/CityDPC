@@ -67,17 +67,17 @@ class Dataset():
             polys_in_building_0 = []
             # get coordinates from all groundSurface of building geometry
             if building_0.has_geometry():
-                for key, coordiantes in building_0.grounds.items():
+                for key, ground in building_0.grounds.items():
                     polys_in_building_0.append(
-                        {"poly_id": key, "coor": coordiantes, "parent": building_0})
+                        {"poly_id": key, "coor": ground.gml_surface_2array, "parent": building_0})
 
             # get coordinates from all groundSurface of buildingPart geometries
             if building_0.has_building_parts():
                 for b_part in building_0.building_parts:
                     if b_part.has_geometry():
-                        for key, coordiantes in b_part.grounds.items():
+                        for key, ground in b_part.grounds.items():
                             polys_in_building_0.append(
-                                {"poly_id": key, "coor": coordiantes, "parent": b_part})
+                                {"poly_id": key, "coor": ground.gml_surface_2array, "parent": b_part})
 
             # self collision check
             # this includes all walls of the building (and building parts) geometry 
@@ -98,7 +98,7 @@ class Dataset():
                     for poly_0 in polys_in_building_0:
                         p_0 = self._create_buffered_polygon(poly_0["coor"])
                         for gml_id, poly_1 in building_1.grounds.items():
-                            p_1 = slyGeom.Polygon(poly_1)
+                            p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                             if not p_0.intersection(p_1).is_empty:
                                 party_walls = find_party_walls(
                                     poly_0["parent"], building_1)
@@ -113,7 +113,7 @@ class Dataset():
                             for poly_0 in polys_in_building_0:
                                 p_0 = self._create_buffered_polygon(poly_0["coor"])
                                 for gml_id, poly_1 in b_part.grounds.items():
-                                    p_1 = slyGeom.Polygon(poly_1)
+                                    p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                                     if not p_0.intersection(p_1).is_empty:
                                         # To-Do: building (or bp) with other building part
                                         party_walls = find_party_walls(

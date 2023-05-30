@@ -1,4 +1,4 @@
-# taken from the bs2023-MaSh branch of TEASER plus, last update: Mar 11, 2023 9:23pm GMT+0100
+# taken from the bs2023-MaSh branch of TEASER plus, last update: Mar 11, 2023 9:23pm GMT+0100, slightly modified
 import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
@@ -23,14 +23,16 @@ class SurfaceGML(object):
 
     """
 
-    def __init__(self,
-                 gml_surface,
-                 boundary=None):
+    def __init__(self,gml_surface,
+                 gml_id = None, surface_type = None):
         self.gml_surface = gml_surface
-        self.name = boundary
+        self.gml_id = gml_id
+        self.surface_type = surface_type
+        self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
         self.surface_area = None
         self.surface_orientation = None
         self.surface_tilt = None
+        self.normal_uni = None
 
         useless_points = []
         split_surface = list(zip(*[iter(self.gml_surface)] * 3))
@@ -118,6 +120,9 @@ class SurfaceGML(object):
 
         normal_1 = np.cross(vektor_1, vektor_2)
         normal_uni = normal_1 / LA.norm(normal_1)
+        
+        self.normal_uni = normal_uni
+
         phi = None
         if normal_uni[0] > 0:
             phi = np.arctan(normal_uni[1] / normal_uni[0])

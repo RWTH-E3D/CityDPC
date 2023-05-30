@@ -4,6 +4,7 @@ from scipy.spatial import ConvexHull
 
 
 import gmlUtils
+from surfacegml import SurfaceGML
 
 
 class _AbstractBuilding():
@@ -33,14 +34,14 @@ class _AbstractBuilding():
 
         if self.roofs != {}:
             self.roof_volume = 0
-            for points in self.roofs.values():
-                if np.all(points == points[0,:], axis = 0)[2]:
+            for roof_surface in self.roofs.values():
+                if np.all(roof_surface.gml_surface_2array == roof_surface.gml_surface_2array[0,:], axis = 0)[2]:
                     # roof surface is flat -> no volume to calculate
                     continue
-                minimum_roof_height = np.min(points, axis=0)[2]
-                closing_points = np.array(points, copy=True)
+                minimum_roof_height = np.min(roof_surface.gml_surface_2array, axis=0)[2]
+                closing_points = np.array(roof_surface.gml_surface_2array, copy=True)
                 closing_points[:, 2] = minimum_roof_height
-                closed = np.concatenate([closing_points, points])
+                closed = np.concatenate([closing_points, roof_surface.gml_surface_2array])
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
 
@@ -88,7 +89,13 @@ class Building(_AbstractBuilding):
         return self.building_parts != []
 
     def building_part_ids(self) -> list:
-        """returns a list of gml:id's of the building parts within the building"""
+        """returns list of building part ids of given building
+
+        Returns
+        -------
+        list
+            all building part ids of building
+        """
         return [x.id for x in self.building_parts]
 
 
@@ -166,11 +173,16 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
                 roof_id = poly_id
                 roof_average_height = polygon_average_height
 
-        roof = {roof_id: all_poylgons[roof_id]}
+        roof = {roof_id: SurfaceGML(all_poylgons[roof_id].ravel(), roof_id, "LoD1_roof")}
         del all_poylgons[roof_id]
-        ground = {ground_id: all_poylgons[ground_id]}
+        ground = {ground_id: SurfaceGML(all_poylgons[ground_id].ravel(), ground_id, "LoD1_ground")}
         del all_poylgons[ground_id]
-        return all_poylgons, roof, ground, []
+        
+        walls = {}
+        for wall_id, coordinates in all_poylgons.items():
+            walls[wall_id] = SurfaceGML(coordinates.ravel(), wall_id, "LoD1_wall")
+    
+        return walls, roof, ground, {}
 
     # everything greater than LoD1
     walls = get_surface_dict_from_element(
@@ -248,7 +260,8 @@ def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: 
             id = None
         poly_E = surface_E.find('.//gml:Polygon', nsmap)
         coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
-        result[id if id else f"{id_str}_{i}"] = coordinates
+        used_id = id if id else f"{id_str}_{i}"
+        result[used_id] = SurfaceGML(coordinates.ravel(), used_id, target_str.rsplit(":")[-1])
     return result
 
 
