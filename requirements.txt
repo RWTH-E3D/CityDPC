@@ -1,4 +1,0 @@
-numpy
-lxml
-scipy
-shapley
