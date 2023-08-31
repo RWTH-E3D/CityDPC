@@ -45,10 +45,10 @@ class _AbstractBuilding():
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
 
-    def has_geometry(self) -> bool:
+    def has_3Dgeometry(self) -> bool:
         """checks if abstractBuilding has geometry
 
-        to return true the building needs to at least one roof geometry
+        to return true the building needs to have at least one roof geometry
         one ground geometry and either a wall or closure geomety
 
         Returns
@@ -134,6 +134,30 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         dictionaries are in the order: walls, roofs, grounds, closure
         the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
     """
+    # check if building is LoD0
+    lod0FootPrint_E = element.find('bldg:lod0FootPrint', nsmap)
+    lod0RoofEdge_E = element.find('bldg:lod0RoofEdge', nsmap)
+    if lod0FootPrint_E != None or lod0RoofEdge_E != None:
+        
+        grounds = {}
+        if lod0FootPrint_E != None:
+            poly_E = lod0FootPrint_E.findall('.//gml:Polygon', nsmap)
+            poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
+            coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+            grounds_id = poly_id if poly_id else f"poly_{i}"
+            grounds = {grounds_id: SurfaceGML(coordinates.ravel(), grounds_id, "LoD0_footPrint")}
+
+        roofs = {}
+        if lod0RoofEdge_E != None:
+            poly_E = lod0RoofEdge_E.findall('.//gml:Polygon', nsmap)
+            poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
+            coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+            roof_id = poly_id if poly_id else f"poly_{i}"
+            roof = {roof_id: SurfaceGML(coordinates.ravel(), roof_id, "LoD0_roofEdge")}
+
+        return walls, roof, ground, {}
+
+
     # check if building is LoD1
     lod1Solid_E = element.find('bldg:lod1Solid', nsmap)
     if lod1Solid_E != None:
