@@ -3,7 +3,7 @@ import math
 from shapely import geometry as slyGeom
 import shapely
 
-import vectorFunctions as vF
+import CityPY.vectorFunctions as vF
 
 def find_party_walls(buildingLike_0: object, buildingLike_1: object) -> list:
     """takes to buildings and searches for party walls"""

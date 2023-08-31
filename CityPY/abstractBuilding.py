@@ -3,8 +3,8 @@ import lxml.etree as ET
 from scipy.spatial import ConvexHull
 
 
-import gmlUtils
-from surfacegml import SurfaceGML
+import CityPY.gmlUtils as gmlUtils
+from CityPY.surfacegml import SurfaceGML
 
 
 class _AbstractBuilding():
@@ -18,6 +18,7 @@ class _AbstractBuilding():
         self.grounds = {}
         self.closure = {}
         self.roof_volume = None
+        self.lod = None
 
     def load_data_from_xml_element(self, element: ET.Element, nsmap: dict) -> None:
         """gathers information from a single abstract building from given lxml element
@@ -29,7 +30,7 @@ class _AbstractBuilding():
         nsmap : dict
             namespace map of the root xml/gml file in form of a dicitionary 
         """
-        self.walls, self.roofs, self.grounds, self.closure = get_building_surfaces_from_xml_element(
+        self.walls, self.roofs, self.grounds, self.closure, self.lod = get_building_surfaces_from_xml_element(
             element, nsmap)
 
         if self.roofs != {}:
@@ -118,7 +119,7 @@ class BuildingPart(_AbstractBuilding):
 
 
 
-def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> tuple[dict, dict, dict, dict]:
+def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> tuple[dict, dict, dict, dict, str]:
     """gathers surfaces from element and categories them
 
     Parameters
@@ -130,9 +131,11 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
 
     Returns
     -------
-    tuple[dict, dict, dict, dict]
-        dictionaries are in the order: walls, roofs, grounds, closure
-        the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
+    tuple[dict, dict, dict, dict, str]
+        dictionaries : are in the order walls, roofs, grounds, closure
+            the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
+        str: str of found building LoD
+        
     """
     # check if building is LoD0
     lod0FootPrint_E = element.find('bldg:lod0FootPrint', nsmap)
@@ -155,7 +158,7 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
             roof_id = poly_id if poly_id else f"poly_{i}"
             roof = {roof_id: SurfaceGML(coordinates.ravel(), roof_id, "LoD0_roofEdge")}
 
-        return walls, roof, ground, {}
+        return walls, roof, ground, {}, "0"
 
 
     # check if building is LoD1
@@ -206,7 +209,7 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         for wall_id, coordinates in all_poylgons.items():
             walls[wall_id] = SurfaceGML(coordinates.ravel(), wall_id, "LoD1_wall")
     
-        return walls, roof, ground, {}
+        return walls, roof, ground, {}, "1"
 
     # everything greater than LoD1
     walls = get_surface_dict_from_element(
@@ -217,8 +220,13 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         element, nsmap, "bldg:boundedBy/bldg:GroundSurface")
     closure = get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:ClosureSurface")
+    
+    # searching for LoD
+    for elem in element.iter():
+        if elem.tag.split("}")[1].startswith('lod'):
+            lod = elem.tag.split('}')[1][3]
 
-    return walls, roofs, grounds, closure
+    return walls, roofs, grounds, closure, lod
 
 
 def get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dict) -> np.ndarray:

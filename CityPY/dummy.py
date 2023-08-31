@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-from dataset import Dataset
+from CityPY.dataset import Dataset
 
 import numpy as np
 import xml.etree.ElementTree as ET
