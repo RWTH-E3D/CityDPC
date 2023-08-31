@@ -66,7 +66,7 @@ class Dataset():
         for i, building_0 in enumerate(self.buildings):
             polys_in_building_0 = []
             # get coordinates from all groundSurface of building geometry
-            if building_0.has_geometry():
+            if building_0.has_3Dgeometry():
                 for key, ground in building_0.grounds.items():
                     polys_in_building_0.append(
                         {"poly_id": key, "coor": ground.gml_surface_2array, "parent": building_0})
@@ -74,7 +74,7 @@ class Dataset():
             # get coordinates from all groundSurface of buildingPart geometries
             if building_0.has_building_parts():
                 for b_part in building_0.building_parts:
-                    if b_part.has_geometry():
+                    if b_part.has_3Dgeometry():
                         for key, ground in b_part.grounds.items():
                             polys_in_building_0.append(
                                 {"poly_id": key, "coor": ground.gml_surface_2array, "parent": b_part})
@@ -94,7 +94,7 @@ class Dataset():
             # collision with other buildings
             for building_1 in self.buildings[i+1:]:
                 # collision with the building itself
-                if building_1.has_geometry():
+                if building_1.has_3Dgeometry():
                     for poly_0 in polys_in_building_0:
                         p_0 = self._create_buffered_polygon(poly_0["coor"])
                         for gml_id, poly_1 in building_1.grounds.items():
@@ -109,7 +109,7 @@ class Dataset():
                 # collsion with a building part of the building
                 if building_1.has_building_parts():
                     for b_part in building_1.building_parts:
-                        if b_part.has_geometry():
+                        if b_part.has_3Dgeometry():
                             for poly_0 in polys_in_building_0:
                                 p_0 = self._create_buffered_polygon(poly_0["coor"])
                                 for gml_id, poly_1 in b_part.grounds.items():
