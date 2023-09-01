@@ -22,4 +22,5 @@ class CityFile():
         self.filepath = filepath
         self.cityGMLversion = cityGMLversion
         self.building_ids = building_ids
+        self.ades = ades
         self.gmlName = gmlName
