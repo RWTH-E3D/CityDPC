@@ -21,7 +21,7 @@ class Dataset():
         self.name = name
         self._files = []
         self.srsName = None
-        self.buildings = []
+        self.buildings = {}
         self.otherCityObjectMembers = []
         self.party_walls = None
 
@@ -78,7 +78,10 @@ class Dataset():
                     new_building_part.load_data_from_xml_element(bp_E, nsmap)
                     new_building.building_parts.append(new_building_part)
 
-                self.buildings.append(new_building)
+                if building_id in self.buildings.keys():
+                    print(f"WARNING! Doubling of building id {building_id} " + \
+                          f"Only first mention will be considered")
+                self.buildings[building_id] = new_building
                 building_ids.append(building_id)
             else:
                 self.otherCityObjectMembers.append(cityObjectMember_E)
@@ -93,14 +96,14 @@ class Dataset():
         self._files.append(
             CityFile(filepath, cityGMLversion, building_ids, ades, gmlName))
 
-    def get_buildings(self) -> list[Building]:
+    def get_building_list(self) -> list[Building]:
         """returns a list of all buildings within dataset"""
-        return self.buildings
+        return self.buildings.values()
 
     def check_for_party_walls(self):
         """checks if buildings in dataset have """
         self.party_walls = []
-        for i, building_0 in enumerate(self.buildings):
+        for i, building_0 in enumerate(self.get_building_list()):
             polys_in_building_0 = []
             # get coordinates from all groundSurface of building geometry
             if building_0.has_3Dgeometry():
@@ -129,7 +132,7 @@ class Dataset():
                             self.party_walls.extend(party_walls)
 
             # collision with other buildings
-            for building_1 in self.buildings[i+1:]:
+            for building_1 in self.get_building_list()[i+1:]:
                 # collision with the building itself
                 if building_1.has_3Dgeometry():
                     for poly_0 in polys_in_building_0:
