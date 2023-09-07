@@ -137,6 +137,8 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> 
         str: str of found building LoD
         
     """
+    lod = None
+
     # check if building is LoD0
     lod0FootPrint_E = element.find('bldg:lod0FootPrint', nsmap)
     lod0RoofEdge_E = element.find('bldg:lod0RoofEdge', nsmap)
