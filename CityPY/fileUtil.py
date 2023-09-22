@@ -24,3 +24,6 @@ class CityFile():
         self.building_ids = building_ids
         self.ades = ades
         self.gmlName = gmlName
+
+        self.lowerCorner = None
+        self.upperCorner = None

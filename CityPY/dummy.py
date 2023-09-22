@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         # read xml
         fileName = r"D:\downloads\Essen-Vogelheim_LoD2_YOCed.gml"
+        # fileName = r"C:\Users\srami\Desktop\#testing-datasets\Aachen_grabenring.gml"
 
         tree = ET.parse(fileName)
         root = tree.getroot()

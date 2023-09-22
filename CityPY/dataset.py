@@ -2,10 +2,12 @@ import os
 import lxml.etree as ET
 import numpy as np
 from shapely import geometry as slyGeom
+import matplotlib.path as mplP
 
 from CityPY.abstractBuilding import Building, BuildingPart
 from CityPY.buildingFunctions import find_party_walls
 from CityPY.fileUtil import CityFile
+import CityPY.cityATB as atb
 
 
 
@@ -26,11 +28,29 @@ class Dataset():
         self.party_walls = None
 
     def size(self) -> int:
-        """return the number of buildings within the dataset"""
-        return len(self.buildings)
+        """return the number of buildings within the dataset
 
-    def add_buildings_from_xml_file(self, filepath: str):
-        """adds buildings from filepath to the dataset"""
+        Returns
+        -------
+        int
+            number of buildings within the dataset
+        """
+        return len(self.buildings)
+    
+    def add_buildings_from_xml_file(self, filepath: str, borderCoordinates: list= None,
+                                    addressRestriciton: dict= None):
+        """adds buildings from filepath to the dataset
+
+        Parameters
+        ----------
+        filepath : str
+            path to .gml or .xml CityGML file
+        borderCoordinates : list, optional
+            list of coordinates ([x0, y0], [x1, y1], ..) in fileCRS to restrict the dataset,
+            by default None
+        addressRestriciton : dict, optional
+            dictionary of address values to restrict the dataset, by default None
+        """
         parser = ET.XMLParser(remove_blank_text=True)
         tree = ET.parse(filepath, parser)
         root = tree.getroot()
@@ -51,6 +71,8 @@ class Dataset():
         envelope_E = root.find('gml:boundedBy/gml:Envelope', nsmap)
         if envelope_E != None:
             fileSRSName = envelope_E.attrib['srsName']
+            lowerCorner = envelope_E.find('gml:lowerCorner', nsmap).text.split(' ')
+            upperCorner = envelope_E.find('gml:upperCorner', nsmap).text.split(' ')
             if self.srsName == None:
                 self.srsName = fileSRSName
             elif self.srsName == fileSRSName:
@@ -58,6 +80,27 @@ class Dataset():
             else:
                 print(f"Unable to load file! Given srsName ({fileSRSName}) does not match Dataset srsName ({self.srsName})")
                 return
+        else:
+            print(f"Unable to load file! Can't find gml:Envelope for srsName defenition")
+            return
+        
+        #creating border for coordinate restriction
+        if borderCoordinates != None:
+            if len(borderCoordinates) > 2:
+                border = mplP.Path(np.array(borderCoordinates))
+                x1 = float(lowerCorner[0])
+                y1 = float(lowerCorner[1])
+                x2 = float(upperCorner[0])
+                y2 = float(upperCorner[1])
+                fileEnvelopeCoor = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+                if not atb.border_check(border, borderCoordinates, fileEnvelopeCoor):
+                    # file envelope is outside of the border coordinates
+                    return
+            elif len(borderCoordinates) < 3:
+                print(f"Only given {len(borderCoordinates)} borderCoordinates, can't continue")
+                return
+        else:
+            border = None
 
         # find all buildings within file
         cityObjectMembers_in_file = root.findall('core:cityObjectMember', nsmap)
@@ -81,6 +124,28 @@ class Dataset():
                 if building_id in self.buildings.keys():
                     print(f"WARNING! Doubling of building id {building_id} " + \
                           f"Only first mention will be considered")
+                    continue
+
+                if border != None:
+                    res_coor = new_building.check_if_building_in_coordinates(borderCoordinates, \
+                                                                        border)
+
+                if addressRestriciton != None:
+                    res_addr = new_building.check_address()
+                    pass
+
+                if border == None and addressRestriciton == None:
+                    pass
+                elif border != None and addressRestriciton == None:
+                    if not res_coor:
+                        continue
+                elif border == None and addressRestriciton != None:
+                    if not res_addr:
+                        continue
+                else:
+                    if not (res_coor and res_addr):
+                        continue
+                
                 self.buildings[building_id] = new_building
                 building_ids.append(building_id)
             else:
@@ -93,12 +158,22 @@ class Dataset():
             gmlName = gmlName_E.text
 
         # store file related information
-        self._files.append(
-            CityFile(filepath, cityGMLversion, building_ids, ades, gmlName))
+        newCFile = CityFile(filepath, cityGMLversion, building_ids, ades, gmlName)
+        if lowerCorner:
+            CityFile.lowerCorner = (float(lowerCorner[0]), float(lowerCorner[1]))
+        if upperCorner:
+            CityFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
+        self._files.append(newCFile)
 
     def get_building_list(self) -> list[Building]:
-        """returns a list of all buildings within dataset"""
-        return self.buildings.values()
+        """returns a list of all buildings in dataset
+
+        Returns
+        -------
+        list
+            list of all buildings in dataset
+        """
+        return list(self.buildings.values())
 
     def check_for_party_walls(self):
         """checks if buildings in dataset have """

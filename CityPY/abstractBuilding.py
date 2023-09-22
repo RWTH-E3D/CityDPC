@@ -1,10 +1,12 @@
 import numpy as np
 import lxml.etree as ET
 from scipy.spatial import ConvexHull
+import matplotlib.path as mplP
 
 
 import CityPY.gmlUtils as gmlUtils
 from CityPY.surfacegml import SurfaceGML
+from CityPY.cityATB import border_check
 
 
 class _AbstractBuilding():
@@ -19,6 +21,8 @@ class _AbstractBuilding():
         self.closure = {}
         self.roof_volume = None
         self.lod = None
+
+        self.address = {}
 
     def load_data_from_xml_element(self, element: ET.Element, nsmap: dict) -> None:
         """gathers information from a single abstract building from given lxml element
@@ -46,6 +50,12 @@ class _AbstractBuilding():
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
 
+        address_E = element.find('bldg:address', nsmap)
+        for tag in address_E.iter():
+            if tag.text != None:
+                self.address[f"{tag.prefix}:{ET.QName(tag).localname}"] = tag.text
+        
+
     def has_3Dgeometry(self) -> bool:
         """checks if abstractBuilding has geometry
 
@@ -61,6 +71,84 @@ class _AbstractBuilding():
             return True
         else:
             return False
+        
+
+    def _check_if_within_border(self, borderCoordinates: list, \
+                                border: mplP.Path) -> bool | None:
+        """checks if a AbstractBuilding is located within the borderCoordinates
+
+        Parameters
+        ----------
+        borderCoordinates : list
+            list of 2D border coordinates
+
+        border : mplP.Path
+            matplotlib.path Path of given coordinates
+
+        Returns
+        -------
+        bool | None
+            True:  building is located inside the border coordintes
+            False: building is located outside the border coordinates
+            None:  building has no ground reference
+        """
+        
+        if self.grounds != {}:
+            selected_surface = self.grounds
+        elif self.roofs != {}:
+            selected_surface = self.roofs
+        else:
+            return None
+        
+        for surface in selected_surface:
+            surface_2d_coor = np.delete(surface.reshape(-1, 3), 2, 1)
+            res = border_check(border, borderCoordinates, surface_2d_coor)
+            if res:
+                return True
+        return False
+
+
+    def _check_address(self, addressRestriciton: dict) -> bool:
+        """checks if the address building matches the restrictions
+
+        Parameters
+        ----------
+        addressRestriciton : dict
+            list of address xml keys and their values
+            e.g. xal:LocalityName = Aachen
+
+        Returns
+        -------
+        bool
+            True:  building address matches restrictions
+            False: building address does not match restrictions
+        """
+        for key, value in addressRestriciton.items():
+            if not key in self.address.keys():
+                return False
+            if self.address[key] != value:
+                return False
+            
+        return True
+
+
+
+
+class BuildingPart(_AbstractBuilding):
+    """extends _AbstractBuilding class
+
+    contains attributes and functions specific to Buildings
+
+    Parameters
+    ----------
+    _AbstractBuilding : _type_
+
+    """
+
+    def __init__(self, id: str, parent_id: str) -> None:
+        super().__init__(id)
+        self.parent_gml_id = parent_id
+        self.is_building_part = True
 
 
 class Building(_AbstractBuilding):
@@ -88,8 +176,18 @@ class Building(_AbstractBuilding):
             true if building has building parts
         """
         return self.building_parts != []
+    
+    def get_building_parts(self) -> list[BuildingPart]:
+        """return a list of building parts of building
 
-    def building_part_ids(self) -> list:
+        Returns
+        -------
+        list[BuildingPart]
+            
+        """
+        return self.building_parts
+
+    def get_building_part_ids(self) -> list:
         """returns list of building part ids of given building
 
         Returns
@@ -100,26 +198,56 @@ class Building(_AbstractBuilding):
         return [x.id for x in self.building_parts]
 
 
-class BuildingPart(_AbstractBuilding):
-    """extends _AbstractBuilding class
+    def check_if_building_in_coordinates(self, borderCoordinates: list, 
+                                         border: mplP.Path= None) -> bool:
+        """checks if a building or any of the building parts of a building
+        are located inside the given borderCoordiantes
 
-    contains attributes and functions specific to Buildings
+        Parameters
+        ----------
+        borderCoordinates : list
+            a 2D array of 2D coordinates
+        border : mplP.Path, optional
+            borderCoordinates as a matplotlib.path.Path, by default None
 
-    Parameters
-    ----------
-    _AbstractBuilding : _type_
+        Returns
+        -------
+        bool
+            True if building of any building part is within borderCoordinates
+        """
+        if border == None:
+            border = mplP.Path(np.array(borderCoordinates))
 
-    """
+        # check for the geometry of the building itself
+        res = self._check_if_within_border(borderCoordinates, border)
+        if res:
+            return True
+        
+        for buildingPart in self.get_building_parts():
+            res = buildingPart._check_if_within_border(borderCoordinates, border)
+            if res:
+                return True
+            
+        return False
+    
+    def check_building_for_address(self, addressRestriciton: dict) -> bool:
 
-    def __init__(self, id: str, parent_id: str) -> None:
-        super().__init__(id)
-        self.parent_gml_id = parent_id
-        self.is_building_part = True
+        res = self._check_address(addressRestriciton)
+        if res:
+            return True
+        
+        for buildingPart in self.get_building_parts():
+            res = buildingPart._check_address(addressRestriciton)
+            if res:
+                return True
+            
+        return False
+        
+    
 
 
-
-
-def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) -> tuple[dict, dict, dict, dict, str]:
+def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
+                                          -> tuple[dict, dict, dict, dict, str]:
     """gathers surfaces from element and categories them
 
     Parameters
