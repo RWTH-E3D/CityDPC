@@ -3,6 +3,7 @@ import lxml.etree as ET
 import numpy as np
 from shapely import geometry as slyGeom
 import matplotlib.path as mplP
+import copy
 
 from CityPY.abstractBuilding import Building, BuildingPart
 from CityPY.buildingFunctions import find_party_walls
@@ -174,6 +175,70 @@ class Dataset():
             list of all buildings in dataset
         """
         return list(self.buildings.values())
+    
+    def search_dataset(self, borderCoordinates: list= None, addressRestriciton: dict= None, 
+                       inplace: bool= False) -> object:
+        """searches dataset for buildings within coordinates and matching address values
+
+        Parameters
+        ----------
+        borderCoordinates : list, optional
+            2D array of 2D coordinates
+        addressRestriciton : dict, optional
+            dict key:value tagName:tagValue pairing 
+        inplace : bool, optional
+            default False, if True edits current dataset, if False creates deepcopy
+
+        Returns
+        -------
+        object
+            _description_
+        """
+        
+
+        if inplace:
+            newDataset = self
+        else:
+            newDataset = copy.deepcopy(self)
+
+        if borderCoordinates == None and addressRestriciton == None:
+            return self
+        
+        if borderCoordinates != None:
+            border = mplP.Path(borderCoordinates)
+        else:
+            border = None
+        
+        for file in newDataset._files:
+            if border != None:
+                [x0, y0] = file.lowerCorner
+                [x1, y1] = file.upperConer
+                fileEnvelopeCoor = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+
+                # envelope is outside border
+                if not atb.border_check(border, borderCoordinates, fileEnvelopeCoor):
+                    for building_id in file.building_ids:
+                        del newDataset.buildings[building_id]
+                    newDataset._files.remove(file)
+                    continue
+                
+            for building_id in file.building_ids:
+                
+                res = newDataset.buildings[building_id].check_if_building_in_coordinates(borderCoordinates, \
+                                                                                    border)
+                if not res:
+                    del newDataset.buildings[building_id]
+                    file.building_ids.remove(building_id)
+                    continue
+
+                res = newDataset.buildings[building_id].check_building_for_address(addressRestriciton)
+
+                if not res:
+                    del newDataset.buildings[building_id]
+                    file.building_ids.remove(building_id)
+                    continue
+
+        return newDataset
 
     def check_for_party_walls(self):
         """checks if buildings in dataset have """
