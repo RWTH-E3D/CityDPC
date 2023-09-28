@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-from dataset import Dataset
+from CityPY.dataset import Dataset
 
 import numpy as np
 import xml.etree.ElementTree as ET
@@ -48,6 +48,7 @@ class MainWindow(QtWidgets.QMainWindow):
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         # read xml
         fileName = r"D:\downloads\Essen-Vogelheim_LoD2_YOCed.gml"
+        # fileName = r"C:\Users\srami\Desktop\#testing-datasets\Aachen_grabenring.gml"
 
         tree = ET.parse(fileName)
         root = tree.getroot()
