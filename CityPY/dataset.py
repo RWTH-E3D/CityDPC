@@ -132,7 +132,7 @@ class Dataset():
                                                                         border)
 
                 if addressRestriciton != None:
-                    res_addr = new_building.check_address()
+                    res_addr = new_building.check_building_for_address()
                     pass
 
                 if border == None and addressRestriciton == None:
