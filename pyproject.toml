@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "CityPY"
+name = "PyStadt"
 version = "0.0.1"
 authors = [
   { name="Simon Raming", email="simon.raming@rwth-aachen.de" },
