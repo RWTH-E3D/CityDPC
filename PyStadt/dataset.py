@@ -5,10 +5,10 @@ from shapely import geometry as slyGeom
 import matplotlib.path as mplP
 import copy
 
-from CityPY.abstractBuilding import Building, BuildingPart
-from CityPY.buildingFunctions import find_party_walls
-from CityPY.fileUtil import CityFile
-import CityPY.cityATB as atb
+from PyStadt.abstractBuilding import Building, BuildingPart
+from PyStadt.buildingFunctions import find_party_walls
+from PyStadt.fileUtil import CityFile
+import PyStadt.cityATB as atb
 
 
 
