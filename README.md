@@ -11,6 +11,8 @@ python3 -m build
 ```
 and then install the package (if necessary using the _force-reinstall_ flag).
 
+Also take a look at the [examples](examples)!
+
 ## Support
 If you ran into any problems feel free to open a [new issue](https://gitlab.e3d.rwth-aachen.de/e3d-software-tools/citypythonclass/-/issues) or reach out to one of the developers.
 
