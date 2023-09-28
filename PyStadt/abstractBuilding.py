@@ -4,9 +4,9 @@ from scipy.spatial import ConvexHull
 import matplotlib.path as mplP
 
 
-import CityPY.gmlUtils as gmlUtils
-from CityPY.surfacegml import SurfaceGML
-from CityPY.cityATB import border_check
+import PyStadt.gmlUtils as gmlUtils
+from PyStadt.surfacegml import SurfaceGML
+from PyStadt.cityATB import border_check
 
 
 class _AbstractBuilding():
