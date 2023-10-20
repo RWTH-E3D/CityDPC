@@ -62,11 +62,20 @@ for gml_id, building in newDataset.buildings.items():
         # and parameters as buildings
         
         # for example 
-        for builidngPart in building_parts.items():
+        for builidngPart in building_parts:
             roof_volume = builidngPart.roof_volume
 
 # if you don't want to use a dict you can 
 # also get a list of all buildings using
 buildings = newDataset.get_building_list()
 
+# searching for a street name can be done like this
+# you can use as many or as few key value pairs as you like
+newNew = newDataset.search_dataset(addressRestriciton={"thoroughfareName": "Stakenholt"}, inplace=False)
+# with the parameter inplace= False a new Dataset will be created (default)
+# when setting the parameter to True the operation will be done on the existing dataset
 
+
+# if you want to save your changes to a new CityGML file you use
+newNew.write_citygml_file("newFilename.gml")
+# the only parameter is the filename (including path if needed)
