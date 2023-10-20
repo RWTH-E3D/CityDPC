@@ -22,7 +22,23 @@ class _AbstractBuilding():
         self.roof_volume = None
         self.lod = None
 
-        self.address = {}
+        self.creationDate = None
+        self.extRef_infromationsSystem = None
+        self.extRef_objName = None
+        
+        self.genericStrings = {}
+
+        self.function = None
+        self.usage = None
+        self.yearOfConstruction = None
+        self.roofType = None
+        self.measuredHeight = None
+        self.storeysAboveGround = None
+        self.storeysBelowGround = None
+
+        self.terrainIntersections = None
+
+        self.address = None
 
     def load_data_from_xml_element(self, element: ET.Element, nsmap: dict) -> None:
         """gathers information from a single abstract building from given lxml element
@@ -36,6 +52,24 @@ class _AbstractBuilding():
         """
         self.walls, self.roofs, self.grounds, self.closure, self.lod = get_building_surfaces_from_xml_element(
             element, nsmap)
+        
+        self.__get_building_attributes_from_xml_element(element, nsmap)
+
+        lodNTI_E = element.find("bldg:lod2TerrainIntersection", nsmap)
+        if lodNTI_E == None:
+            lodNTI_E = element.find("bldg:lod1TerrainIntersection", nsmap)
+        if lodNTI_E != None:
+            self.terrainIntersections = []
+            curveMember_Es = lodNTI_E.findall(".//gml:curveMember", nsmap)
+            for curve_E in curveMember_Es:
+                self.terrainIntersections.append(get_polygon_coordinates_from_element(curve_E, nsmap))
+
+        extRef_E = element.find("core:externalReference", nsmap)
+        if extRef_E != None:
+            self.extRef_infromationsSystem = _get_text_of_xml_element(extRef_E, nsmap, "core:informationSystem")
+            extObj_E = element.find("core:externalObject", nsmap)
+            if extObj_E != None:
+                self.extRef_objName = _get_text_of_xml_element(extObj_E, nsmap, "core:name")
 
         if self.roofs != {}:
             self.roof_volume = 0
@@ -50,10 +84,12 @@ class _AbstractBuilding():
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
 
-        address_E = element.find('bldg:address', nsmap)
-        for tag in address_E.iter():
-            if tag.text != None:
-                self.address[f"{tag.prefix}:{ET.QName(tag).localname}"] = tag.text
+        address_E = element.find('bldg:address/core:Address', nsmap)
+        if address_E != None:
+
+            self.address = CoreAddress('')
+            self.address.load_info_from_xml(address_E, nsmap)
+
         
 
     def has_3Dgeometry(self) -> bool:
@@ -72,6 +108,34 @@ class _AbstractBuilding():
         else:
             return False
         
+    def __get_building_attributes_from_xml_element(self, element: ET.Element, nsmap: dict) -> None:
+        """loads building attributes from xml Element
+
+        Parameters
+        ----------
+        element : ET.Element
+            either building or building part
+        nsmap : dict
+            namespace map of the root xml/gml file in form of a dicitionary 
+        """
+
+        self.creationDate = _get_text_of_xml_element(element, nsmap, "core:creationDate")
+
+        genStrings = element.findall('gen:stringAttribute', nsmap)
+        for i in genStrings:
+            key = i.attrib["name"]
+            self.genericStrings[key] = _get_text_of_xml_element(i, nsmap, "gen:value")
+        
+        
+        self.function = _get_text_of_xml_element(element, nsmap, "bldg:function")
+        self.usage = _get_text_of_xml_element(element, nsmap, "bldg:usage")
+        self.yearOfConstruction = _get_text_of_xml_element(element, nsmap, "bldg:yearOfConstruction")
+        self.roofType = _get_text_of_xml_element(element, nsmap, "bldg:roofType")
+        self.measuredHeight = _get_text_of_xml_element(element, nsmap, "bldg:measuredHeight")
+        self.storeysAboveGround = _get_text_of_xml_element(element, nsmap, "bldg:storeysAboveGround")
+        self.storeysBelowGround = _get_text_of_xml_element(element, nsmap, "bldg:storeysBelowGround")
+
+
 
     def _check_if_within_border(self, borderCoordinates: list, \
                                 border: mplP.Path) -> bool | None:
@@ -114,8 +178,8 @@ class _AbstractBuilding():
         Parameters
         ----------
         addressRestriciton : dict
-            list of address xml keys and their values
-            e.g. xal:LocalityName = Aachen
+            list of address keys and their values
+            e.g. localityName = Aachen
 
         Returns
         -------
@@ -123,13 +187,8 @@ class _AbstractBuilding():
             True:  building address matches restrictions
             False: building address does not match restrictions
         """
-        for key, value in addressRestriciton.items():
-            if not key in self.address.keys():
-                return False
-            if self.address[key] != value:
-                return False
-            
-        return True
+
+        return self.address.check_address(addressRestriciton)
 
 
 
@@ -231,7 +290,18 @@ class Building(_AbstractBuilding):
         return False
     
     def check_building_for_address(self, addressRestriciton: dict) -> bool:
+        """checks if the address of the building matches the restriction
 
+        Parameters
+        ----------
+        addressRestriciton : dict
+            key: value pair of CoreAddress attribute and wanted value
+
+        Returns
+        -------
+        bool
+            returns True if all conditions are met for the building or at least one buildingPart
+        """
         res = self._check_address(addressRestriciton)
         if res:
             return True
@@ -242,8 +312,81 @@ class Building(_AbstractBuilding):
                 return True
             
         return False
-        
-    
+
+
+
+class CoreAddress():
+    """object representing a core:Address element
+    """
+
+    def __init__(self, id: str) -> None:
+        self.gml_id = id
+
+        self.countryName = None
+        self.locality_type = None
+        self.localityName = None
+        self.thoroughfare_type = None
+        self.thoroughfareNumber = None
+        self.thoroughfareName = None
+        self.postalCodeNumber = None
+
+
+    def check_address(self, addressRestriciton: dict) -> bool:
+        """check if all restricitons are met
+
+        Parameters
+        ----------
+        addressRestriciton : dict
+            key: value pair of attribute and wanted value
+
+        Returns
+        -------
+        bool
+            returns True if all conditions are met
+        """
+
+        for key, value in addressRestriciton.items():
+            if key == "countryName":
+                if self.countryName != value:
+                    return False
+            elif key == "locality_type":
+                if self.locality_type != value:
+                    return False
+            elif key == "localityName":
+                if self.localityName != value:
+                    return False
+            elif key == "thoroughfare_type":
+                if self.thoroughfare_type != value:
+                    return False
+            elif key == "thoroughfareNumber":
+                if self.thoroughfareNumber != value:
+                    return False
+            elif key == "thoroughfareName":
+                if self.thoroughfareName != value:
+                    return False
+            elif key == "postalCodeNumber":
+                if self.postalCodeNumber != value:
+                    return False
+            
+            return True
+
+
+    def load_info_from_xml(self, element: ET.Element, nsmap):
+        """loads data from an core:Address element
+
+        Parameters
+        ----------
+        element : ET.Element
+            core:Address element
+        """
+        self.gml_id = element.attrib['{http://www.opengis.net/gml}id']
+
+        self.countryName = _get_text_of_xml_element(element,  nsmap, './/xal:CountryName')
+        self.locality_type = _get_attrib_of_xml_element(element, nsmap, './/xal:Locality', "Type")
+        self.localityName = _get_text_of_xml_element(element, nsmap, './/xal:LocalityName')
+        self.thoroughfare_type = _get_attrib_of_xml_element(element, nsmap, './/xal:Thoroughfare', "Type")
+        self.thoroughfareNumber = _get_text_of_xml_element(element, nsmap, './/xal:ThoroughfareNumber')
+        self.thoroughfareName = _get_text_of_xml_element(element, nsmap, './/xal:ThoroughfareName')
 
 
 def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
@@ -275,18 +418,20 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
         grounds = {}
         if lod0FootPrint_E != None:
             poly_E = lod0FootPrint_E.findall('.//gml:Polygon', nsmap)
-            poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
             coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
-            grounds_id = poly_id if poly_id else f"poly_{i}"
-            grounds = {grounds_id: SurfaceGML(coordinates.ravel(), grounds_id, "LoD0_footPrint")}
+            ground_id = poly_id if poly_id else f"poly_{i}"
+            newSurface = SurfaceGML(coordinates, ground_id, "LoD0_footPrint", None)
+            if newSurface.isSurface:
+                grounds = {ground_id: newSurface}
 
         roofs = {}
         if lod0RoofEdge_E != None:
             poly_E = lod0RoofEdge_E.findall('.//gml:Polygon', nsmap)
-            poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
             coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
             roof_id = poly_id if poly_id else f"poly_{i}"
-            roof = {roof_id: SurfaceGML(coordinates.ravel(), roof_id, "LoD0_roofEdge")}
+            newSurface = SurfaceGML(coordinates, roof_id, "LoD0_roofEdge", None)
+            if newSurface.isSurface:
+                roof = {roof_id: newSurface}
 
         return walls, roof, ground, {}, "0"
 
@@ -329,15 +474,20 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
             elif polygon_average_height > roof_average_height:
                 roof_id = poly_id
                 roof_average_height = polygon_average_height
-
-        roof = {roof_id: SurfaceGML(all_poylgons[roof_id].ravel(), roof_id, "LoD1_roof")}
+        newSurface = SurfaceGML(all_poylgons[roof_id], roof_id, "LoD1_roof", None)
+        if newSurface.isSurface:
+            roof = {roof_id: newSurface}
         del all_poylgons[roof_id]
-        ground = {ground_id: SurfaceGML(all_poylgons[ground_id].ravel(), ground_id, "LoD1_ground")}
+        newSurface = SurfaceGML(all_poylgons[ground_id], ground_id, "LoD1_ground", None)
+        if newSurface.isSurface:
+            ground = {ground_id: newSurface}
         del all_poylgons[ground_id]
         
         walls = {}
         for wall_id, coordinates in all_poylgons.items():
-            walls[wall_id] = SurfaceGML(coordinates.ravel(), wall_id, "LoD1_wall")
+            newSurface = SurfaceGML(coordinates, wall_id, "LoD1_wall", None)
+            if newSurface.isSurface:
+                walls[wall_id] = newSurface
     
         return walls, roof, ground, {}, "1"
 
@@ -377,18 +527,17 @@ def get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dic
     np.ndarray
        numpy array of coordinates in 3D
     """
-    polygon = []
+    polyStr = []
     # searching for list of coordinates
     posList_E = polygon_element.find('.//gml:posList', nsmap)
     if posList_E != None:
-        polyStr = posList_E.text
+        polyStr = posList_E.text.split(' ')
     else:
         # searching for individual coordinates in polygon
         pos_Es = polygon_element.findall('.//gml:pos', nsmap)
         for pos_E in pos_Es:
-            polygon.append(pos_E.text)
-        polyStr = ' '.join(polygon)
-    return gmlUtils.get_3D_posList_from_str(polyStr)
+            polyStr.extend(pos_E.text.split(' '))
+    return [float(x) for x in polyStr]
 
 
 def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
@@ -421,9 +570,61 @@ def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: 
         else:
             id = None
         poly_E = surface_E.find('.//gml:Polygon', nsmap)
+        poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
         coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
         used_id = id if id else f"{id_str}_{i}"
-        result[used_id] = SurfaceGML(coordinates.ravel(), used_id, target_str.rsplit(":")[-1])
+        newSurface = SurfaceGML(coordinates, used_id, target_str.rsplit(":")[-1], poly_id)
+        if newSurface.isSurface:
+            result[used_id] = newSurface
     return result
 
 
+def _get_text_of_xml_element(element: ET.Element, nsmap: dict, target: str) -> str | None:
+    """gets the text content of a target element
+
+    Parameters
+    ----------
+    element : ET.Element
+        parent element of target
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
+    target : str
+        prefixed target element name
+
+    Returns
+    -------
+    str | None
+        returns either the value as a string or None
+    """
+    res_E = element.find(target, nsmap)
+    if res_E != None:
+        return res_E.text
+    return None
+
+
+def _get_attrib_of_xml_element(element: ET.Element, nsmap: dict, target: str,
+                               attrib: str) -> str | None:
+    """gets the attribute of a target element
+
+    Parameters
+    ----------
+    element : ET.Element
+        parent element of target
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
+    target : str
+        prefixed target element name
+    attrib : str
+        attribute name
+
+    Returns
+    -------
+    str | None
+        returns either the attribute value as a string or None
+    """
+    res_E = element.find(target, nsmap)
+    if res_E != None:
+        if attrib in res_E.attrib.keys():
+            return res_E.attrib[attrib]
+
+    return None

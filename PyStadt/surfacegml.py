@@ -24,11 +24,11 @@ class SurfaceGML(object):
     """
 
     def __init__(self,gml_surface,
-                 gml_id = None, surface_type = None):
+                 surface_id = None, surface_type = None, polygon_id = None):
         self.gml_surface = gml_surface
-        self.gml_id = gml_id
+        self.surface_id = surface_id
         self.surface_type = surface_type
-        self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
+        self.polygon_id = polygon_id        
         self.surface_area = None
         self.surface_orientation = None
         self.surface_tilt = None
@@ -42,6 +42,14 @@ class SurfaceGML(object):
             if element in useless_points:
                 split_surface.remove(element)
         self.gml_surface = list(chain(*split_surface))
+        if len(self.gml_surface) < 9:
+            self.isSurface = False
+            print(f"WARNING! The surface {surface_id} - {polygon_id} has to few individual coordinates")
+            return
+        self.isSurface = True
+        
+        self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
+        self.creationDate = None
 
         self.surface_area = self.get_gml_area()
         self.surface_orientation = self.get_gml_orientation()
