@@ -161,15 +161,15 @@ class _AbstractBuilding():
         """
         
         if self.grounds != {}:
-            selected_surface = self.grounds
+            selected_surface = list(self.grounds.values())
         elif self.roofs != {}:
-            selected_surface = self.roofs
+            selected_surface = list(self.roofs.values())
         else:
             return None
         
         for surface in selected_surface:
-            surface_2d_coor = np.delete(surface.reshape(-1, 3), 2, 1)
-            res = border_check(border, borderCoordinates, surface_2d_coor)
+            two_2array = np.delete(surface.gml_surface_2array, -1, 1)
+            res = border_check(border, borderCoordinates, two_2array)
             if res:
                 return True
         return False

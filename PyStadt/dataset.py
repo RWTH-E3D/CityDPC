@@ -165,9 +165,9 @@ class Dataset():
         # store file related information
         newCFile = CityFile(filepath, cityGMLversion, building_ids, ades, gmlName)
         if lowerCorner:
-            CityFile.lowerCorner = (float(lowerCorner[0]), float(lowerCorner[1]))
+            newCFile.lowerCorner = (float(lowerCorner[0]), float(lowerCorner[1]))
         if upperCorner:
-            CityFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
+            newCFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
         self._files.append(newCFile)
 
     def get_building_list(self) -> list[Building]:
@@ -209,6 +209,8 @@ class Dataset():
             return newDataset
         
         if borderCoordinates != None:
+            if borderCoordinates[0] != borderCoordinates[-1]:
+                borderCoordinates.append(borderCoordinates[0])
             border = mplP.Path(borderCoordinates)
         else:
             border = None
@@ -216,7 +218,7 @@ class Dataset():
         for file in newDataset._files:
             if border != None:
                 [x0, y0] = file.lowerCorner
-                [x1, y1] = file.upperConer
+                [x1, y1] = file.upperCorner
                 fileEnvelopeCoor = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
                 # envelope is outside border

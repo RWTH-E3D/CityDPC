@@ -76,7 +76,7 @@ def border_check(border: mplP.Path, list_of_border:list, list_of_coordinates:lis
     for point in list_of_coordinates:
         if border.contains_point(point):
             return True
-    n_border = mplP(np.array(list_of_coordinates))
+    n_border = mplP.Path(np.array(list_of_coordinates))
     for point in list_of_border:
         if n_border.contains_point(point):
             return True

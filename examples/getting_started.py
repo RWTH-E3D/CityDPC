@@ -71,11 +71,18 @@ buildings = newDataset.get_building_list()
 
 # searching for a street name can be done like this
 # you can use as many or as few key value pairs as you like
-newNew = newDataset.search_dataset(addressRestriciton={"thoroughfareName": "Stakenholt"}, inplace=False)
+dataAddress = newDataset.search_dataset(addressRestriciton={"thoroughfareName": "Stakenholt"}, inplace=False)
 # with the parameter inplace= False a new Dataset will be created (default)
 # when setting the parameter to True the operation will be done on the existing dataset
 
+# you can also create a coordinate border using the borderCoordinates argument
+dataCoordinate = newDataset.search_dataset(borderCoordinates=[[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]])
+
+# you can also do both operations at the same time (and even in the add_buildings_from_xml_file function)
+dataCombine = newDataset.search_dataset(borderCoordinates=
+                                        [[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]],
+                                        addressRestriciton={"thoroughfareName": "Stakenholt"})
 
 # if you want to save your changes to a new CityGML file you use
-newNew.write_citygml_file("newFilename.gml")
+dataCombine.write_citygml_file("newFilename.gml")
 # the only parameter is the filename (including path if needed)
