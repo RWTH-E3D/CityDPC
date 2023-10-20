@@ -66,7 +66,7 @@ class _AbstractBuilding():
         extRef_E = element.find("core:externalReference", nsmap)
         if extRef_E != None:
             self.extRef_infromationsSystem = _get_text_of_xml_element(extRef_E, nsmap, "core:informationSystem")
-            extObj_E = element.find("core:externalObject", nsmap)
+            extObj_E = extRef_E.find("core:externalObject", nsmap)
             if extObj_E != None:
                 self.extRef_objName = _get_text_of_xml_element(extObj_E, nsmap, "core:name")
 
@@ -85,8 +85,12 @@ class _AbstractBuilding():
 
         address_E = element.find('bldg:address/core:Address', nsmap)
         if address_E != None:
+            if '{http://www.opengis.net/gml}id' in address_E.attrib.keys():
+                id = address_E.attrib['{http://www.opengis.net/gml}id']
+            else:
+                id = ''
 
-            self.address = CoreAddress('')
+            self.address = CoreAddress(id)
             self.address.load_info_from_xml(address_E, nsmap)
 
         
@@ -169,26 +173,6 @@ class _AbstractBuilding():
             if res:
                 return True
         return False
-
-
-    def _check_address(self, addressRestriciton: dict) -> bool:
-        """checks if the address building matches the restrictions
-
-        Parameters
-        ----------
-        addressRestriciton : dict
-            list of address keys and their values
-            e.g. localityName = Aachen
-
-        Returns
-        -------
-        bool
-            True:  building address matches restrictions
-            False: building address does not match restrictions
-        """
-
-        return self.address.check_address(addressRestriciton)
-
 
 
 
@@ -301,14 +285,16 @@ class Building(_AbstractBuilding):
         bool
             returns True if all conditions are met for the building or at least one buildingPart
         """
-        res = self._check_address(addressRestriciton)
-        if res:
-            return True
-        
-        for buildingPart in self.get_building_parts():
-            res = buildingPart._check_address(addressRestriciton)
+        if self.address != None:
+            res = self.address.check_address(addressRestriciton)
             if res:
                 return True
+        
+        for buildingPart in self.get_building_parts():
+            if buildingPart.address != None:
+                res = buildingPart.address.check_address(addressRestriciton)
+                if res:
+                    return True
             
         return False
 
@@ -331,17 +317,19 @@ class CoreAddress():
 
 
     def check_address(self, addressRestriciton: dict) -> bool:
-        """check if all restricitons are met
+        """checks if the address building matches the restrictions
 
         Parameters
         ----------
         addressRestriciton : dict
-            key: value pair of attribute and wanted value
+            list of address keys and their values
+            e.g. localityName = Aachen
 
         Returns
         -------
         bool
-            returns True if all conditions are met
+            True:  building address matches restrictions
+            False: building address does not match restrictions
         """
 
         for key, value in addressRestriciton.items():
@@ -386,6 +374,7 @@ class CoreAddress():
         self.thoroughfare_type = _get_attrib_of_xml_element(element, nsmap, './/xal:Thoroughfare', "Type")
         self.thoroughfareNumber = _get_text_of_xml_element(element, nsmap, './/xal:ThoroughfareNumber')
         self.thoroughfareName = _get_text_of_xml_element(element, nsmap, './/xal:ThoroughfareName')
+        self.postalCodeNumber = _get_text_of_xml_element(element, nsmap, './/xal:PostalCodeNumber')
 
 
 def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \

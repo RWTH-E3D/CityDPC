@@ -137,8 +137,7 @@ class Dataset():
                                                                         border)
 
                 if addressRestriciton != None:
-                    res_addr = new_building.check_building_for_address()
-                    pass
+                    res_addr = new_building.check_building_for_address(addressRestriciton)
 
                 if border == None and addressRestriciton == None:
                     pass
@@ -207,7 +206,7 @@ class Dataset():
             newDataset = copy.deepcopy(self)
 
         if borderCoordinates == None and addressRestriciton == None:
-            return self
+            return newDataset
         
         if borderCoordinates != None:
             border = mplP.Path(borderCoordinates)
@@ -227,21 +226,26 @@ class Dataset():
                     newDataset._files.remove(file)
                     continue
                 
+            toDelete = []
             for building_id in file.building_ids:
                 
-                res = newDataset.buildings[building_id].check_if_building_in_coordinates(borderCoordinates, \
-                                                                                    border)
-                if not res:
-                    del newDataset.buildings[building_id]
-                    file.building_ids.remove(building_id)
-                    continue
+                if border != None:
+                    res = newDataset.buildings[building_id].check_if_building_in_coordinates(borderCoordinates, \
+                                                                                        border)
+                    if not res:
+                        toDelete.append(building_id)
+                        continue
 
-                res = newDataset.buildings[building_id].check_building_for_address(addressRestriciton)
+                if addressRestriciton != None:
+                    res = newDataset.buildings[building_id].check_building_for_address(addressRestriciton)
 
-                if not res:
-                    del newDataset.buildings[building_id]
-                    file.building_ids.remove(building_id)
-                    continue
+                    if not res:
+                        toDelete.append(building_id)
+                        continue
+
+            for building_id in toDelete:
+                del newDataset.buildings[building_id]
+                file.building_ids.remove(building_id)
 
         return newDataset
 
@@ -337,7 +341,7 @@ class Dataset():
         nClass.xsi = 'http://www.w3.org/2001/XMLSchema-instance'
 
         # creating new namespacemap
-        newNSmap = {'core': nClass.core, 'gen' : nClass.gen, 'grp' : nClass.grp, 'app': nClass.app, 'bldg' : nClass.bldg, 'gml': nClass.gml,
+        newNSmap = {None: nClass.core, 'core': nClass.core, 'gen' : nClass.gen, 'grp' : nClass.grp, 'app': nClass.app, 'bldg' : nClass.bldg, 'gml': nClass.gml,
                     'xal' : nClass.xal, 'xlink' : nClass.xlink, 'xsi' : nClass.xsi}
         
         
@@ -411,7 +415,7 @@ class Dataset():
         if building.extRef_infromationsSystem != None and building.extRef_objName != None:
             extRef_E = ET.SubElement(building_E, ET.QName(nClass.core, 'externalReference'))
             ET.SubElement(extRef_E, ET.QName(nClass.core, 'informationSystem')).text = building.extRef_infromationsSystem
-            extObj_E = ET.SubElement(building_E, ET.QName(nClass.core, 'externalObject'))
+            extObj_E = ET.SubElement(extRef_E, ET.QName(nClass.core, 'externalObject'))
             ET.SubElement(extObj_E, ET.QName(nClass.core, 'name')).text = building.extRef_objName
 
         for key, value in building.genericStrings.items():
@@ -568,12 +572,14 @@ class Dataset():
         if building.address != None:
             bldgAddress_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, 'address'))
             address_E = ET.SubElement(bldgAddress_E, "Address")
+            if building.address.gml_id != None:
+                address_E.attrib['{http://www.opengis.net/gml}id'] = building.address.gml_id
             xalAddress_E = ET.SubElement(address_E, "xalAddress")
             addressDetails_E = ET.SubElement(xalAddress_E, ET.QName(nClass.xal, "AddressDetails"))
             country_E = ET.SubElement(addressDetails_E, ET.QName(nClass.xal, "Country"))
             
             if building.address.countryName != None:
-                ET.SubElement(country_E, ET.QName(nClass.xal, "CountryName"))
+                ET.SubElement(country_E, ET.QName(nClass.xal, "CountryName")).text = building.address.countryName
 
             locality_E = ET.SubElement(country_E, ET.QName(nClass.xal, "Locality"), attrib={"Type": building.address.locality_type})
             
@@ -587,10 +593,10 @@ class Dataset():
                     thoroughfare_E.attrib["Type"] = building.address.thoroughfare_type
 
                 if building.address.thoroughfareNumber != None:
-                    ET.SubElement(locality_E, ET.QName(nClass.xal, "ThoroughfareName")).text = building.address.thoroughfareNumber
+                    ET.SubElement(thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareNumber")).text = building.address.thoroughfareNumber
                 
                 if building.address.thoroughfareName != None:
-                    ET.SubElement(locality_E, ET.QName(nClass.xal, "ThoroughfareNumber")).text = building.address.thoroughfareName
+                    ET.SubElement(thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareName")).text = building.address.thoroughfareName
 
             if building.address.postalCodeNumber != None:
                 postalCode_E = ET.SubElement(locality_E, ET.QName(nClass.xal, "PostalCode"))
