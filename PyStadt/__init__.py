@@ -1,1 +1,1 @@
-from PyStadt.dataset import Dataset
+from pyStadt.dataset import Dataset

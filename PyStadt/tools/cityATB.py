@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from PyStadt.dataset import Dataset
+    from pyStadt.dataset import Dataset
+    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
 
 import numpy as np
 import matplotlib.path as mplP
@@ -15,7 +16,7 @@ def analysis(dataset: Dataset) -> dict:
     Parameters
     ----------
     data : Dataset
-        CityPY dataset
+        CityPY dataset object
 
     Returns
     -------
@@ -113,14 +114,15 @@ def search_dataset(dataset: Dataset, borderCoordinates: list= None, addressRestr
         for building_id in file.building_ids:
             
             if border != None:
-                res = newDataset.buildings[building_id].check_if_building_in_coordinates(borderCoordinates, \
-                                                                                    border)
+                res = check_if_building_in_coordinates(newDataset.buildings[building_id], \
+                                                       borderCoordinates, border)
+
                 if not res:
                     toDelete.append(building_id)
                     continue
 
             if addressRestriciton != None:
-                res = newDataset.buildings[building_id].check_building_for_address(addressRestriciton)
+                res = check_building_for_address(newDataset.buildings[building_id], addressRestriciton)
 
                 if not res:
                     toDelete.append(building_id)
@@ -132,6 +134,99 @@ def search_dataset(dataset: Dataset, borderCoordinates: list= None, addressRestr
 
     return newDataset
 
+
+def check_if_building_in_coordinates(building: AbstractBuilding, borderCoordinates: list, 
+                                        border: mplP.Path= None) -> bool:
+    """checks if a building or any of the building parts of a building
+    are located inside the given borderCoordiantes
+
+    Parameters
+    ----------
+    borderCoordinates : list
+        a 2D array of 2D coordinates
+    border : mplP.Path, optional
+        borderCoordinates as a matplotlib.path.Path, by default None
+
+    Returns
+    -------
+    bool
+        True if building of any building part is within borderCoordinates
+    """
+    if border == None:
+        border = mplP.Path(np.array(borderCoordinates))
+
+    # check for the geometry of the building itself
+    res = _check_if_within_border(building, borderCoordinates, border)
+    if res:
+        return True
+    
+    for buildingPart in building.get_building_parts():
+        res = _check_if_within_border(buildingPart, borderCoordinates, border)
+        if res:
+            return True
+        
+    return False
+
+def check_building_for_address(building: AbstractBuilding, addressRestriciton: dict) -> bool:
+    """checks if the address of the building matches the restriction
+
+    Parameters
+    ----------
+    addressRestriciton : dict
+        key: value pair of CoreAddress attribute and wanted value
+
+    Returns
+    -------
+    bool
+        returns True if all conditions are met for the building or at least one buildingPart
+    """
+    if building.address != None:
+        res = building.address.check_address(addressRestriciton)
+        if res:
+            return True
+    
+    for buildingPart in building.get_building_parts():
+        if buildingPart.address != None:
+            res = buildingPart.address.check_address(addressRestriciton)
+            if res:
+                return True
+        
+    return False
+
+
+def _check_if_within_border(building: AbstractBuilding, borderCoordinates: list, \
+                            border: mplP.Path) -> bool | None:
+    """checks if a AbstractBuilding is located within the borderCoordinates
+
+    Parameters
+    ----------
+    borderCoordinates : list
+        2D list of 2D border coordinates
+
+    border : mplP.Path
+        matplotlib.path Path of given coordinates
+
+    Returns
+    -------
+    bool | None
+        True:  building is located inside the border coordintes
+        False: building is located outside the border coordinates
+        None:  building has no ground reference
+    """
+    
+    if building.grounds != {}:
+        selected_surface = list(building.grounds.values())
+    elif building.roofs != {}:
+        selected_surface = list(building.roofs.values())
+    else:
+        return None
+    
+    for surface in selected_surface:
+        two_2array = np.delete(surface.gml_surface_2array, -1, 1)
+        res = _border_check(border, borderCoordinates, two_2array)
+        if res:
+            return True
+    return False
 
 
 def _border_check(border: mplP.Path, list_of_border:list, list_of_coordinates:list) \

@@ -1,6 +1,6 @@
-# PyStadt
+# pyStadt
 
-PyStadt is a python package for working with CityGML (and soon CityJSON) files.
+pyStadt is a python package for working with CityGML (and soon CityJSON) files.
 
 
 ## Getting started

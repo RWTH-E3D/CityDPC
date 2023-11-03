@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from PyStadt.dataset import Dataset
-    from PyStadt.core.obejcts.surfacegml import SurfaceGML
+    from pyStadt.dataset import Dataset
+    from pyStadt.core.obejcts.surfacegml import SurfaceGML
 
 def update_min_max(dataset: Dataset, surface: SurfaceGML):
     """updates the min and max values for the dataset based on the new surface

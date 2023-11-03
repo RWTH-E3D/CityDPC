@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from PyStadt.dataset import Dataset
-    from PyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from pyStadt.dataset import Dataset
+    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
 
 
 import numpy as np
@@ -11,10 +11,20 @@ import math
 from shapely import geometry as slyGeom
 import shapely
 
-import PyStadt.calc.vectorOperations as vF
+def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
+    """checks for adjacent walls in dataset
 
-def get_party_walls(dataset: Dataset):
-    """checks if buildings in dataset have """
+    Parameters
+    ----------
+    dataset : Dataset
+        dataset object containing all buildings that should be checked
+
+    Returns
+    -------
+    list
+        returns a list of all detected party walls as a list of
+        [id of b0, id of w0, id of b1, id of w1, area, list of collision coordinates]
+    """
     all_party_walls = []
     for i, building_0 in enumerate(dataset.get_building_list()):
         polys_in_building_0 = []
@@ -77,8 +87,22 @@ def get_party_walls(dataset: Dataset):
                                     break
     return all_party_walls
 
-def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: AbstractBuilding) -> list:
-    """takes to buildings and searches for party walls"""
+def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: AbstractBuilding) -> list[str, str, str, str, float, list]:
+    """takes to buildings and searches for party walls
+
+    Parameters
+    ----------
+    buildingLike_0 : AbstractBuilding
+        first building to check
+    buildingLike_1 : AbstractBuilding
+        second building to check 
+
+    Returns
+    -------
+    list
+        returns a list of all detected party walls as a list of
+        [id of b0, id of w0, id of b1, id of w1, area, list of collision coordinates]
+    """
     np.set_printoptions(suppress=True)
     party_walls = []
     b_0_surfaces = {**buildingLike_0.walls, **buildingLike_0.closure}
@@ -116,8 +140,8 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
                     rad_angle = -math.atan2(delta_y, delta_x) if delta_x != 0 else math.pi/2
                     target_y = t_surf_0[0][1]
                     rot_point = t_surf_0[0]
-                    poly_0_rotated = vF.rotate_polygon_around_point_in_x_y(rot_point, t_surf_0, rad_angle)
-                    poly_1_rotated = vF.rotate_polygon_around_point_in_x_y(rot_point, t_surf_1, rad_angle)
+                    poly_0_rotated = _rotate_polygon_around_point_in_x_y(t_surf_0, rot_point, rad_angle)
+                    poly_1_rotated = _rotate_polygon_around_point_in_x_y(t_surf_1, rot_point, rad_angle)
 
                 # check distance in rotated y direction (if distance is larger than 0.15 [uom] walls shouldn't be considered as party walls)
                 if abs(np.mean(poly_0_rotated, axis=0)[1] - np.mean(poly_1_rotated, axis=0)[1]) > 0.15:
@@ -138,31 +162,87 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
                         id_1 = buildingLike_1.gml_id if not buildingLike_1.is_building_part else buildingLike_1.parent_gml_id + \
                             "/" + buildingLike_1.gml_id
                         if type(intersection) == shapely.Polygon:
-                            threeD_contact = _get_collision_unrotated(intersection, rad_angle, target_y, rot_point)
+                            threeD_contact = _get_collision_unrotated(intersection, rot_point, rad_angle, target_y)
                             party_walls.append(
                                 [id_0, gml_id_0, id_1, gml_id_1, intersection.area, threeD_contact])
 
                         elif type(intersection) == shapely.GeometryCollection:
                             for section in intersection.geoms:
                                 if type(section) == shapely.Polygon and section.area > 5:
-                                    threeD_contact = _get_collision_unrotated(section, rad_angle, target_y, rot_point)
+                                    threeD_contact = _get_collision_unrotated(section, rot_point, rad_angle, target_y)
                                     party_walls.append(
                                         [id_0, gml_id_0, id_1, gml_id_1, section.area, threeD_contact])
 
     return party_walls
 
 def _create_buffered_polygon(coordinates: np.ndarray, buffer: float = 0.15) -> slyGeom.Polygon:
-    """creates a buffered shapely polygon"""
+    """creates a buffered shapely polygon
+
+    Parameters
+    ----------
+    coordinates : np.ndarray
+        list of coordiantes that should be buffered
+    buffer : float, optional
+        buffer distance, by default 0.15
+
+    Returns
+    -------
+    slyGeom.Polygon
+        returns a buffered shapely Polygon
+    """
     poly = slyGeom.Polygon(coordinates)
     return poly.buffer(buffer)
 
-def _get_collision_unrotated(intersection_poly: shapely.Polygon, rot_angle: float, target_y: float, rot_point: list) -> list:
-    """calculates the 3D coordinates of intersection"""
+def _get_collision_unrotated(intersection_poly: shapely.Polygon, rotation_center: list, rot_angle: float, target_y: float) -> list:
+    """calculates the 3D coordinates of intersection
+
+    Parameters
+    ----------
+    intersection_poly : shapely.Polygon
+        shapley Polygon that is in [x,z] plane
+    rotation_center : list
+        coordinate around which the polygon should be rotaded
+    rot_angle : float
+        roation angle 
+    target_y : float
+        target y coordiante
+
+    Returns
+    -------
+    list
+        list of coordinates after rotation
+    """
     xx, yy = intersection_poly.exterior.xy
     n = []
     for x, y in zip(xx.tolist(), yy.tolist()):
         n.append([x, target_y, y])
     if type(rot_angle) != None:
-        return vF.rotate_polygon_around_point_in_x_y(rot_point, n, -rot_angle)
+        return _rotate_polygon_around_point_in_x_y(n, rotation_center, -rot_angle)
     else:
         return  n
+    
+def _rotate_polygon_around_point_in_x_y(polygon: list, rotation_center: list, rot_angle: float) -> list:
+    """rotates a polygon around a rotation center by an angle (in radians) in counter clockwise direction
+
+    Parameters
+    ----------
+    polygon : list
+        list of coordinates
+    rotation_center : list
+        coordinate around which the polygon should be rotaded
+    rot_angle : float
+        roation angle
+
+    Returns
+    -------
+    list
+        list of coordinates after rotation
+    """
+    ox, oy, _ = rotation_center
+    rotated = []
+    for point in polygon:
+        px, py, pz = point
+        qx = ox + math.cos(rot_angle) * (px - ox) - math.sin(rot_angle) * (py - oy)
+        qy = oy + math.sin(rot_angle) * (px - ox) + math.cos(rot_angle) * (py - oy)
+        rotated.append([qx, qy, pz])
+    return rotated

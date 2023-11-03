@@ -5,21 +5,23 @@ basic information about the dataset
 """
 
 # start by importing the Dataset package
-from PyStadt import Dataset
+from pyStadt import Dataset
 # important: import Dataset and not dataset
 
 # create a Dataset object
 newDataset = Dataset()
 
-# add a xml/gml file
-newDataset.add_buildings_from_xml_file("examples/files/EssenExample.gml")
+# to load buildings from a file you need the respective importer
+# to add a xml/gml file:
+from pyStadt.core.input.citygmlInput import load_buildings_from_xml_file
+load_buildings_from_xml_file(newDataset, "examples/files/EssenExample.gml")
 
 # get the number of buildings in the Dataset
 number_of_buildings = newDataset.size()
 
 # you can get some more info (e.g. gml_version, crs, LoD) 
 # using the analysis function
-from PyStadt.tools import cityATB
+from pyStadt.tools import cityATB
 dict_with_info = cityATB.analysis(newDataset)
 
 # buildings are stored as a dict
@@ -78,13 +80,13 @@ dataAddress = cityATB.search_dataset(newDataset, addressRestriciton={"thoroughfa
 # you can also create a coordinate border using the borderCoordinates argument
 dataCoordinate = cityATB.search_dataset(newDataset, borderCoordinates=[[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]])
 
-# you can also do both operations at the same time (and even in the add_buildings_from_xml_file function)
+# you can also do both operations at the same time (and even in the load_buildings_from_xml_file function)
 dataCombine = cityATB.search_dataset(newDataset, borderCoordinates=
                                         [[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]],
                                         addressRestriciton={"thoroughfareName": "Stakenholt"})
 
-print(dataCoordinate.size())
-
-# if you want to save your changes to a new CityGML file you use
-dataCombine.write_to_citygml("newFilename.gml")
-# the only parameter is the filename (including path if needed)
+# if you want to save your changes you need the respective exporter
+# for CityGML use:
+from pyStadt.core.output.citygmlOutput import write_citygml_file
+write_citygml_file(dataCombine, "newFilename.gml")
+# you can choose between CityGML 1.0 and 2.0

@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from PyStadt.dataset import Dataset
-    from PyStadt.core.obejcts.address import CoreAddress
-    from PyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from pyStadt.dataset import Dataset
+    from pyStadt.core.obejcts.address import CoreAddress
+    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
 
 
 import lxml.etree as ET
@@ -12,11 +12,11 @@ import numpy as np
 from scipy.spatial import ConvexHull
 import matplotlib.path as mplP
 
-from PyStadt.tools.cityATB import _border_check
-from PyStadt.core.obejcts.building import Building
-from PyStadt.core.obejcts.buildingPart import BuildingPart
-from PyStadt.core.obejcts.surfacegml import SurfaceGML
-from PyStadt.core.obejcts.fileUtil import CityFile
+from pyStadt.tools.cityATB import _border_check, check_building_for_address, check_if_building_in_coordinates
+from pyStadt.core.obejcts.building import Building
+from pyStadt.core.obejcts.buildingPart import BuildingPart
+from pyStadt.core.obejcts.surfacegml import SurfaceGML
+from pyStadt.core.obejcts.fileUtil import CityFile
 
 
 def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordinates: list= None,
@@ -93,14 +93,14 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
         for building_E in buildings_in_com:
             building_id = building_E.attrib['{http://www.opengis.net/gml}id']
             new_building = Building(building_id)
-            load_building_information_from_xml(building_E, nsmap, new_building)
+            _load_building_information_from_xml(building_E, nsmap, new_building)
 
             bps_in_bldg = building_E.findall(
                 'bldg:consistsOfBuildingPart/bldg:BuildingPart', nsmap)
             for bp_E in bps_in_bldg:
                 bp_id = bp_E.attrib['{http://www.opengis.net/gml}id']
                 new_building_part = BuildingPart(bp_id, building_id)
-                load_building_information_from_xml(bp_E, nsmap, new_building_part)
+                _load_building_information_from_xml(bp_E, nsmap, new_building_part)
                 new_building.building_parts.append(new_building_part)
 
             if building_id in dataset.buildings.keys():
@@ -109,11 +109,12 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
                 continue
 
             if border != None:
-                res_coor = new_building.check_if_building_in_coordinates(borderCoordinates, \
+                res_coor = check_if_building_in_coordinates(new_building,\
+                                                            borderCoordinates,\
                                                                     border)
 
             if addressRestriciton != None:
-                res_addr = new_building.check_building_for_address(addressRestriciton)
+                res_addr = check_building_for_address(new_building, addressRestriciton)
 
             if border == None and addressRestriciton == None:
                 pass
@@ -146,17 +147,17 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
         newCFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
     dataset._files.append(newCFile)
 
-def load_address_info_from_xml(addressElement: ET.Element, nsmap: dict, address: CoreAddress) -> None:
+def _load_address_info_from_xml(address: CoreAddress, addressElement: ET.Element, nsmap: dict) -> None:
     """loads address info from an <core:Address> element and adds it to the address object
 
     Parameters
     ----------
-    addressElement : ET.Element
-        <core:Address> element
-    nsmap : dict
-        namespace map of the root xml/gml file in form of a dicitionary 
     address : CoreAddress
         CoreAddress object to add data to
+    addressElement : ET.Element
+        <core:Address> lxml.etree element
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
     """
     if '{http://www.opengis.net/gml}id' in addressElement.attrib.keys():
             address.gml_id = addressElement.attrib['{http://www.opengis.net/gml}id']
@@ -169,12 +170,21 @@ def load_address_info_from_xml(addressElement: ET.Element, nsmap: dict, address:
     address.thoroughfareName = _get_text_of_xml_element(addressElement, nsmap, './/xal:ThoroughfareName')
     address.postalCodeNumber = _get_text_of_xml_element(addressElement, nsmap, './/xal:PostalCodeNumber')
 
+def _load_building_information_from_xml(buildingElement: ET.Element, nsmap: dict, building: AbstractBuilding):
+    """loads building information from xml element 
 
-def load_building_information_from_xml(buildingElement: ET.Element, nsmap: dict, building: AbstractBuilding):
-    building.walls, building.roofs, building.grounds, building.closure, building.lod = get_building_surfaces_from_xml_element(
-        buildingElement, nsmap)
+    Parameters
+    ----------
+    buildingElement : ET.Element
+        either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary 
+    building : AbstractBuilding
+        either Building or BuildingPart object to add info to
+    """
+    _get_building_surfaces_from_xml_element(building, buildingElement, nsmap)
     
-    _get_building_attributes_from_xml_element(buildingElement, nsmap, building)
+    _get_building_attributes_from_xml_element(building, buildingElement, nsmap)
 
     lodNTI_E = buildingElement.find("bldg:lod2TerrainIntersection", nsmap)
     if lodNTI_E == None:
@@ -183,7 +193,7 @@ def load_building_information_from_xml(buildingElement: ET.Element, nsmap: dict,
         building.terrainIntersections = []
         curveMember_Es = lodNTI_E.findall(".//gml:curveMember", nsmap)
         for curve_E in curveMember_Es:
-            building.terrainIntersections.append(get_polygon_coordinates_from_element(curve_E, nsmap))
+            building.terrainIntersections.append(_get_polygon_coordinates_from_element(curve_E, nsmap))
 
     extRef_E = buildingElement.find("core:externalReference", nsmap)
     if extRef_E != None:
@@ -207,16 +217,18 @@ def load_building_information_from_xml(buildingElement: ET.Element, nsmap: dict,
 
     address_E = buildingElement.find('bldg:address/core:Address', nsmap)
     if address_E != None:
-        load_address_info_from_xml(address_E, nsmap, building.address)
+        _load_address_info_from_xml(building.address, address_E, nsmap)
 
 
-def _get_building_attributes_from_xml_element(buildingElement: ET.Element, nsmap: dict, building: AbstractBuilding) -> None:
+def _get_building_attributes_from_xml_element(building: AbstractBuilding, buildingElement: ET.Element, nsmap: dict) -> None:
     """loads building attributes from xml Element
 
     Parameters
     ----------
+    building : AbstractBuilding
+        either Building or BuildingPart object to add info to
     element : ET.Element
-        either building or building part
+        either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary 
     """
@@ -237,16 +249,17 @@ def _get_building_attributes_from_xml_element(buildingElement: ET.Element, nsmap
     building.storeysBelowGround = _get_text_of_xml_element(buildingElement, nsmap, "bldg:storeysBelowGround")
 
 
-
-def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
-                                          -> tuple[dict, dict, dict, dict, str]:
+def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element: ET.Element, nsmap: dict) -> None:
     """gathers surfaces from element and categories them
 
     Parameters
     ----------
+    building : AbstractBuilding
+        either Building or BuildingPart object to add info to
     element : ET.Element
-        lxml element of an abstracBuilding
+        either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
     nsmap : dict
+       namespace map of the root xml/gml file in form of a dicitionary 
        namespace map of the root xml/gml file in form of a dicitionary 
 
     Returns
@@ -256,7 +269,17 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
             the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
         str: str of found building LoD
         
+        namespace map of the root xml/gml file in form of a dicitionary 
+
+    Returns
+    -------
+    tuple[dict, dict, dict, dict, str]
+        dictionaries : are in the order walls, roofs, grounds, closure
+            the dicitionaries have a key value pairing of gml:id : coordinates (3 dimensional)
+        str: str of found building LoD
+        
     """
+
     lod = None
 
     # check if building is LoD0
@@ -267,7 +290,7 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
         grounds = {}
         if lod0FootPrint_E != None:
             poly_E = lod0FootPrint_E.findall('.//gml:Polygon', nsmap)
-            coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
             ground_id = poly_id if poly_id else f"poly_{i}"
             newSurface = SurfaceGML(coordinates, ground_id, "LoD0_footPrint", None)
             if newSurface.isSurface:
@@ -276,13 +299,18 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
         roofs = {}
         if lod0RoofEdge_E != None:
             poly_E = lod0RoofEdge_E.findall('.//gml:Polygon', nsmap)
-            coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
             roof_id = poly_id if poly_id else f"poly_{i}"
             newSurface = SurfaceGML(coordinates, roof_id, "LoD0_roofEdge", None)
             if newSurface.isSurface:
                 roof = {roof_id: newSurface}
 
-        return walls, roof, ground, {}, "0"
+        building.walls = walls
+        building.roofs = roofs
+        building.grounds = grounds
+        building.closure = {}
+        building.lod = "0"
+        return
 
     # check if building is LoD1
     lod1Solid_E = element.find('bldg:lod1Solid', nsmap)
@@ -293,7 +321,7 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
         all_poylgons = {}
         for i, poly_E in enumerate(poly_Es):
             poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
-            coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
             all_poylgons[poly_id if poly_id else f"poly_{i}"] = coordinates
 
         # search for polygon with lowest and highest average height
@@ -324,11 +352,11 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
                 roof_average_height = polygon_average_height
         newSurface = SurfaceGML(all_poylgons[roof_id], roof_id, "LoD1_roof", None)
         if newSurface.isSurface:
-            roof = {roof_id: newSurface}
+            roofs = {roof_id: newSurface}
         del all_poylgons[roof_id]
         newSurface = SurfaceGML(all_poylgons[ground_id], ground_id, "LoD1_ground", None)
         if newSurface.isSurface:
-            ground = {ground_id: newSurface}
+            grounds = {ground_id: newSurface}
         del all_poylgons[ground_id]
         
         walls = {}
@@ -337,16 +365,21 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
             if newSurface.isSurface:
                 walls[wall_id] = newSurface
     
-        return walls, roof, ground, {}, "1"
+        building.walls = walls
+        building.roofs = roofs
+        building.grounds = grounds
+        building.closure = {}
+        building.lod = "1"
+        return
 
     # everything greater than LoD1
-    walls = get_surface_dict_from_element(
+    walls = _get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:WallSurface")
-    roofs = get_surface_dict_from_element(
+    roofs = _get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:RoofSurface")
-    grounds = get_surface_dict_from_element(
+    grounds = _get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:GroundSurface")
-    closure = get_surface_dict_from_element(
+    closure = _get_surface_dict_from_element(
         element, nsmap, "bldg:boundedBy/bldg:ClosureSurface")
     
     # searching for LoD
@@ -354,26 +387,30 @@ def get_building_surfaces_from_xml_element(element: ET.Element, nsmap: dict) \
         if elem.tag.split("}")[1].startswith('lod'):
             lod = elem.tag.split('}')[1][3]
 
-    return walls, roofs, grounds, closure, lod
+    building.walls = walls
+    building.roofs = roofs
+    building.grounds = grounds
+    building.closure = closure
+    building.lod = lod
+    return
 
-
-def get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dict) -> np.ndarray:
+def _get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dict) -> np.array:
     """search the element for coordinates
 
     takes coordinates from both gml:posList and gml:pos elements
-    returns an array of the 3D coordinates
+    returns an numpy array of the coordinates
 
     Parameters
     ----------
     polygon_element : ET.Element
-        lxml element of a gml:polygon
+        <gml:polygon> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary 
 
     Returns
     -------
-    np.ndarray
-       numpy array of coordinates in 3D
+    np.array
+       1D numpy array of coordinates
     """
     polyStr = []
     # searching for list of coordinates
@@ -385,17 +422,17 @@ def get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: dic
         pos_Es = polygon_element.findall('.//gml:pos', nsmap)
         for pos_E in pos_Es:
             polyStr.extend(pos_E.text.split(' '))
-    return [float(x) for x in polyStr]
+    return np.array([float(x) for x in polyStr])
 
 
-def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
+def _get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
     """creates a dictionary from surfaces of lxml element
     
 
     Parameters
     ----------
     element : ET.Element
-        lxml element of an abstracBuilding
+        either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary 
     target_str : str
@@ -419,7 +456,7 @@ def get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: 
             id = None
         poly_E = surface_E.find('.//gml:Polygon', nsmap)
         poly_id = poly_E.attrib['{http://www.opengis.net/gml}id']
-        coordinates = get_polygon_coordinates_from_element(poly_E, nsmap)
+        coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
         used_id = id if id else f"{id_str}_{i}"
         newSurface = SurfaceGML(coordinates, used_id, target_str.rsplit(":")[-1], poly_id)
         if newSurface.isSurface:
@@ -433,7 +470,7 @@ def _get_text_of_xml_element(element: ET.Element, nsmap: dict, target: str) -> s
     Parameters
     ----------
     element : ET.Element
-        parent element of target
+        parent lxml.etree element of target element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary 
     target : str
@@ -457,7 +494,7 @@ def _get_attrib_of_xml_element(element: ET.Element, nsmap: dict, target: str,
     Parameters
     ----------
     element : ET.Element
-        parent element of target
+        parent lxml.etree element of target element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary 
     target : str
@@ -474,5 +511,4 @@ def _get_attrib_of_xml_element(element: ET.Element, nsmap: dict, target: str,
     if res_E != None:
         if attrib in res_E.attrib.keys():
             return res_E.attrib[attrib]
-
     return None

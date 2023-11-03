@@ -2,14 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from PyStadt.dataset import Dataset
-    from PyStadt.core.obejcts.building import Building
+    from pyStadt.dataset import Dataset
+    from pyStadt.core.obejcts.building import Building
 
 
 import lxml.etree as ET
 
-import PyStadt.util.citygmlClasses as citygmlClasses
-from PyStadt.util.envelope import update_min_max
+import pyStadt.util.citygmlClasses as citygmlClasses
+from pyStadt.util.envelope import update_min_max
 
 
 def write_citygml_file(dataset: Dataset, filename: str, version: str= "2.0"):
@@ -17,6 +17,8 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str= "2.0"):
 
     Parameters
     ----------
+    dataset : Dataset
+        dataset that should be saved
     filename : str
         new filename (including path if wanted)
     version : str
@@ -39,13 +41,12 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str= "2.0"):
     newNSmap = {None: nClass.core, 'core': nClass.core, 'gen' : nClass.gen, 'grp' : nClass.grp, 'app': nClass.app, 'bldg' : nClass.bldg, 'gml': nClass.gml,
                 'xal' : nClass.xal, 'xlink' : nClass.xlink, 'xsi' : nClass.xsi}
     
-    
     # creating new root element
     nroot_E = ET.Element(ET.QName(nClass.core, 'CityModel'), nsmap= newNSmap)
 
     # creating name element
     name_E = ET.SubElement(nroot_E, ET.QName(nClass.gml, 'name'), nsmap={'gml': nClass.gml})
-    name_E.text = 'created using the e3D PyStadt'
+    name_E.text = 'created using the e3D pyStadt'
 
     # creating gml enevelope
     bound_E = ET.SubElement(nroot_E, ET.QName(nClass.gml, 'boundedBy'))
@@ -55,19 +56,19 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str= "2.0"):
 
     for building in dataset.get_building_list():
         cityObjectMember_E = ET.SubElement(nroot_E, ET.QName(nClass.core, 'cityObjectMember'))
-        building_E = _add_building_to_cityModel_xml(dataset, cityObjectMember_E, nClass, building)
+        building_E = _add_building_to_cityModel_xml(dataset, building, cityObjectMember_E, nClass)
 
         for buildingPart in building.building_parts:
 
             cOBP_E = ET.SubElement(building_E, ET.QName(nClass.bldg, 'Building'), attrib={ET.QName(nClass.gml, 'id'): building.gml_id})
 
-            bp_E = _add_building_to_cityModel_xml(dataset, cOBP_E, nClass, buildingPart, True)
+            bp_E = _add_building_to_cityModel_xml(dataset, buildingPart, cOBP_E, nClass)
 
             if building.address != None:
-                _add_address_to_xml_building(bp_E, nClass, buildingPart)
+                _add_address_to_xml_building(buildingPart, bp_E, nClass)
         
         if building.address != None:
-            _add_address_to_xml_building(building_E, nClass, building)
+            _add_address_to_xml_building(building, building_E, nClass)
 
     lcorner.text = ' '.join(map(str, dataset._minimum))
     ucorner.text = ' '.join(map(str, dataset._maximum))
@@ -78,19 +79,20 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str= "2.0"):
 
 
 
-def _add_building_to_cityModel_xml(dataset: Dataset, parent_E: ET.Element, nClass: citygmlClasses.CGML0, building: Building, is_buildingPart: bool= False) -> ET.Element:
+def _add_building_to_cityModel_xml(dataset: Dataset, building: Building, parent_E: ET.Element, nClass: citygmlClasses.CGML0) -> ET.Element:
     """adds a building or buildingPart to a cityModel
 
     Parameters
     ----------
+    dataset : Dataset
+        Dataset for updating min max coordinates
+    building : Building
+        either Building or BuildingPart object
     parent_E : ET.Element
         direct parent element (either cityObjectMember or consistsOfBuildingPart)
     nClass : xmlClasses.CGML0
         namespace class
-    building : Building
-        Building object
-    is_buildingPart : bool, optional
-        flag if building or buildingPart, by default False
+    
 
     Returns
     -------
@@ -98,7 +100,7 @@ def _add_building_to_cityModel_xml(dataset: Dataset, parent_E: ET.Element, nClas
         created element
     """
 
-    if not is_buildingPart:
+    if not building.is_building_part:
         building_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, 'Building'), attrib={ET.QName(nClass.gml, 'id'): building.gml_id})
     else:
         building_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, 'BuildingPart'), attrib={ET.QName(nClass.gml, 'id'): building.gml_id})
@@ -141,7 +143,7 @@ def _add_building_to_cityModel_xml(dataset: Dataset, parent_E: ET.Element, nClas
         compositeSurface_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, 'CompositeSurface'))
         
         if building.terrainIntersections != None:
-            _add_terrainIntersection_to_xml_building(building_E, nClass, building, 2)
+            _add_terrainIntersection_to_xml_building( building, 2, building_E, nClass)
 
 
         for surface in list(building.roofs.values()) + list(building.walls.values()) + list(building.closure.values())+ list(building.grounds.values()):
@@ -170,7 +172,7 @@ def _add_building_to_cityModel_xml(dataset: Dataset, parent_E: ET.Element, nClas
         compositeSurface_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "CompositeSurface"))
 
         if building.terrainIntersections != None:
-            _add_terrainIntersection_to_xml_building(building_E, nClass, building, 1)
+            _add_terrainIntersection_to_xml_building(building, 1, building_E, nClass)
         
 
         for surface in list(building.roofs.values()) + list(building.walls.values()) + list(building.closure.values()) + list(building.grounds.values()):
@@ -211,19 +213,19 @@ def _add_building_to_cityModel_xml(dataset: Dataset, parent_E: ET.Element, nClas
     return building_E
 
 
-def _add_terrainIntersection_to_xml_building(parent_E: ET.Element, nClass: citygmlClasses.CGML0, building: Building, lod: int) -> None:
+def _add_terrainIntersection_to_xml_building(building: Building, lod: int, parent_E: ET.Element, nClass: citygmlClasses.CGML0) -> None:
     """adds terrainIntersection to an xml element
 
     Parameters
     ----------
-    parent_E : ET.Element
-        direct parent element (either cityObjectMember or consistsOfBuildingPart)
-    nClass : xmlClasses.CGML0
-        namespace class
     building : Building
         Building object
     lod : int
         Level of Detail
+    parent_E : ET.Element
+        direct parent element (either cityObjectMember or consistsOfBuildingPart)
+    nClass : xmlClasses.CGML0
+        namespace class
     """
 
     lodNTI_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, f"lod{lod}TerrainIntersection"))
@@ -235,17 +237,17 @@ def _add_terrainIntersection_to_xml_building(parent_E: ET.Element, nClass: cityg
         posList_E.text = ' '.join(map(str, curve))
 
 
-def _add_address_to_xml_building(parent_E: ET.Element, nClass: citygmlClasses.CGML0, building: Building) -> None:
+def _add_address_to_xml_building(building: Building, parent_E: ET.Element, nClass: citygmlClasses.CGML0) -> None:
     """_summary_
 
     Parameters
     ----------
+    building : Building
+        either Building or BuildingPart object
     parent_E : ET.Element
         direct parent element (either cityObjectMember or consistsOfBuildingPart)
     nClass : xmlClasses.CGML0
         namespace class
-    building : Building
-        Building Object
     """
 
     if building.address != None:

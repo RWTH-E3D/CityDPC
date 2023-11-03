@@ -10,12 +10,12 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import xml.etree.ElementTree as ET
 
-from PyStadt.dataset import Dataset
-from PyStadt.tools.partywall import get_party_walls
+from pyStadt.dataset import Dataset
+from pyStadt.tools.partywall import get_party_walls
 
 """
 This is an example script shows how party walls 
-(adjacent walls) can be detected using the PyStadt package.
+(adjacent walls) can be detected using the pyStadt package.
 Feel free to change the fileName (including path) to 
 visualise your file.
 """

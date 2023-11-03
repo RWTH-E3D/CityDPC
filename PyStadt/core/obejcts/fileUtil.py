@@ -4,7 +4,7 @@ class CityFile():
 
     def __init__(self, filepath: str, cityGMLversion: str, building_ids: list, \
                  ades: list, gmlName: str = None) -> None:
-        """_summary_
+        """stores information from an imported file
 
         Parameters
         ----------
