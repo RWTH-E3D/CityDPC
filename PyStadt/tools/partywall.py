@@ -1,11 +1,83 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from PyStadt.dataset import Dataset
+    from PyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+
+
 import numpy as np
 import math
 from shapely import geometry as slyGeom
 import shapely
 
-import PyStadt.vectorFunctions as vF
+import PyStadt.calc.vectorOperations as vF
 
-def find_party_walls(buildingLike_0: object, buildingLike_1: object) -> list:
+def get_party_walls(dataset: Dataset):
+    """checks if buildings in dataset have """
+    all_party_walls = []
+    for i, building_0 in enumerate(dataset.get_building_list()):
+        polys_in_building_0 = []
+        # get coordinates from all groundSurface of building geometry
+        if building_0.has_3Dgeometry():
+            for key, ground in building_0.grounds.items():
+                polys_in_building_0.append(
+                    {"poly_id": key, "coor": ground.gml_surface_2array, "parent": building_0})
+
+        # get coordinates from all groundSurface of buildingPart geometries
+        if building_0.has_building_parts():
+            for b_part in building_0.building_parts:
+                if b_part.has_3Dgeometry():
+                    for key, ground in b_part.grounds.items():
+                        polys_in_building_0.append(
+                            {"poly_id": key, "coor": ground.gml_surface_2array, "parent": b_part})
+
+        # self collision check
+        # this includes all walls of the building (and building parts) geometry 
+        for j, poly_0 in enumerate(polys_in_building_0):
+            p_0 = _create_buffered_polygon(poly_0["coor"])
+            for poly_1 in polys_in_building_0[j+1:]:
+                p_1 = slyGeom.Polygon(poly_1["coor"])
+                if not p_0.intersection(p_1).is_empty:
+                    party_walls = _find_party_walls(
+                        poly_0["parent"], poly_1["parent"])
+                    if party_walls != []:
+                        all_party_walls.extend(party_walls)
+
+        # collision with other buildings
+        for building_1 in dataset.get_building_list()[i+1:]:
+            # collision with the building itself
+            if building_1.has_3Dgeometry():
+                for poly_0 in polys_in_building_0:
+                    p_0 = _create_buffered_polygon(poly_0["coor"])
+                    for gml_id, poly_1 in building_1.grounds.items():
+                        p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
+                        if not p_0.intersection(p_1).is_empty:
+                            party_walls = _find_party_walls(
+                                poly_0["parent"], building_1)
+                            if party_walls != []:
+                                all_party_walls.extend(party_walls)
+                            break
+
+            # collsion with a building part of the building
+            if building_1.has_building_parts():
+                for b_part in building_1.building_parts:
+                    if b_part.has_3Dgeometry():
+                        for poly_0 in polys_in_building_0:
+                            p_0 = _create_buffered_polygon(poly_0["coor"])
+                            for gml_id, poly_1 in b_part.grounds.items():
+                                p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
+                                if not p_0.intersection(p_1).is_empty:
+                                    # To-Do: building (or bp) with other building part
+                                    party_walls = _find_party_walls(
+                                        poly_0["parent"], b_part)
+                                    if party_walls != []:
+                                        all_party_walls.extend(
+                                            party_walls)
+                                    break
+    return all_party_walls
+
+def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: AbstractBuilding) -> list:
     """takes to buildings and searches for party walls"""
     np.set_printoptions(suppress=True)
     party_walls = []
@@ -79,6 +151,10 @@ def find_party_walls(buildingLike_0: object, buildingLike_1: object) -> list:
 
     return party_walls
 
+def _create_buffered_polygon(coordinates: np.ndarray, buffer: float = 0.15) -> slyGeom.Polygon:
+    """creates a buffered shapely polygon"""
+    poly = slyGeom.Polygon(coordinates)
+    return poly.buffer(buffer)
 
 def _get_collision_unrotated(intersection_poly: shapely.Polygon, rot_angle: float, target_y: float, rot_point: list) -> list:
     """calculates the 3D coordinates of intersection"""
@@ -90,14 +166,3 @@ def _get_collision_unrotated(intersection_poly: shapely.Polygon, rot_angle: floa
         return vF.rotate_polygon_around_point_in_x_y(rot_point, n, -rot_angle)
     else:
         return  n
-
-def _coor_dict_to_normvector_dict(surface_dict: dict) -> dict:
-    """calculates the normvectors of a surface dict based on the first 3 coordinates"""
-    results = {}
-    for gml_id, coordinates in surface_dict.items():
-        vector = vF.get_norm_vector_of_surface(coordinates)
-        if vector is None:
-            # cross product of first 3 points is null vector -> points don't create a plane
-            continue
-        results[gml_id] = vector
-    return results

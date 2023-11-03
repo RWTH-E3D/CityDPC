@@ -19,7 +19,7 @@ number_of_buildings = newDataset.size()
 
 # you can get some more info (e.g. gml_version, crs, LoD) 
 # using the analysis function
-from PyStadt import cityATB
+from PyStadt.tools import cityATB
 dict_with_info = cityATB.analysis(newDataset)
 
 # buildings are stored as a dict
@@ -71,18 +71,20 @@ buildings = newDataset.get_building_list()
 
 # searching for a street name can be done like this
 # you can use as many or as few key value pairs as you like
-dataAddress = newDataset.search_dataset(addressRestriciton={"thoroughfareName": "Stakenholt"}, inplace=False)
+dataAddress = cityATB.search_dataset(newDataset, addressRestriciton={"thoroughfareName": "Stakenholt"}, inplace=False)
 # with the parameter inplace= False a new Dataset will be created (default)
 # when setting the parameter to True the operation will be done on the existing dataset
 
 # you can also create a coordinate border using the borderCoordinates argument
-dataCoordinate = newDataset.search_dataset(borderCoordinates=[[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]])
+dataCoordinate = cityATB.search_dataset(newDataset, borderCoordinates=[[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]])
 
 # you can also do both operations at the same time (and even in the add_buildings_from_xml_file function)
-dataCombine = newDataset.search_dataset(borderCoordinates=
+dataCombine = cityATB.search_dataset(newDataset, borderCoordinates=
                                         [[360057.31, 5706881.64], [360057.31, 5706267.41], [359792.94, 5706267.41], [359792.94, 5706881.64]],
                                         addressRestriciton={"thoroughfareName": "Stakenholt"})
 
+print(dataCoordinate.size())
+
 # if you want to save your changes to a new CityGML file you use
-dataCombine.write_citygml_file("newFilename.gml")
+dataCombine.write_to_citygml("newFilename.gml")
 # the only parameter is the filename (including path if needed)
