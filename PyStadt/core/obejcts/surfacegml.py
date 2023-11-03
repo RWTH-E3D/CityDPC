@@ -3,6 +3,8 @@ import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
 
+from pyStadt.logger import logger
+
 class SurfaceGML(object):
     """Class for calculating attributes of CityGML surfaces
 
@@ -44,7 +46,7 @@ class SurfaceGML(object):
         self.gml_surface = list(chain(*split_surface))
         if len(self.gml_surface) < 9:
             self.isSurface = False
-            print(f"WARNING! The surface {surface_id} - {polygon_id} has to few individual coordinates")
+            logger.error(f"WARNING! The surface {surface_id} - {polygon_id} has to few individual coordinates")
             return
         self.isSurface = True
         

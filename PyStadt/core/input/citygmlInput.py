@@ -12,6 +12,7 @@ import numpy as np
 from scipy.spatial import ConvexHull
 import matplotlib.path as mplP
 
+from pyStadt.logger import logger
 from pyStadt.tools.cityATB import _border_check, check_building_for_address, check_if_building_in_coordinates
 from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
@@ -33,6 +34,7 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
     addressRestriciton : dict, optional
         dictionary of address values to restrict the dataset, by default None
     """
+    logger.info(f"loading buildings from CityGML file {filepath}")
     parser = ET.XMLParser(remove_blank_text=True)
     tree = ET.parse(filepath, parser)
     root = tree.getroot()
@@ -60,10 +62,9 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
         elif dataset.srsName == fileSRSName:
             pass
         else:
-            print(f"Unable to load file! Given srsName ({fileSRSName}) does not match Dataset srsName ({dataset.srsName})")
-            return
+            logger.error(f"Unable to load file! Given srsName ({fileSRSName}) does not match Dataset srsName ({dataset.srsName})")
     else:
-        print(f"Unable to load file! Can't find gml:Envelope for srsName defenition")
+        logger.error(f"Unable to load file! Can't find gml:Envelope for srsName defenition")
         return
     
     #creating border for coordinate restriction
@@ -79,7 +80,7 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
                 # file envelope is outside of the border coordinates
                 return
         elif len(borderCoordinates) < 3:
-            print(f"Only given {len(borderCoordinates)} borderCoordinates, can't continue")
+            logger.error(f"Only given {len(borderCoordinates)} borderCoordinates, can't continue")
             return
     else:
         border = None
@@ -104,8 +105,8 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
                 new_building.building_parts.append(new_building_part)
 
             if building_id in dataset.buildings.keys():
-                print(f"WARNING! Doubling of building id {building_id} " + \
-                        f"Only first mention will be considered")
+                logger.warning(f"Doubling of building id {building_id} " + \
+                               f"Only first mention will be considered")
                 continue
 
             if border != None:
@@ -146,6 +147,7 @@ def load_buildings_from_xml_file(dataset: Dataset, filepath: str, borderCoordina
     if upperCorner:
         newCFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
     dataset._files.append(newCFile)
+    logger.info(f"finished loading buildings from CityGML file {filepath}")
 
 def _load_address_info_from_xml(address: CoreAddress, addressElement: ET.Element, nsmap: dict) -> None:
     """loads address info from an <core:Address> element and adds it to the address object
@@ -295,6 +297,8 @@ def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element:
             newSurface = SurfaceGML(coordinates, ground_id, "LoD0_footPrint", None)
             if newSurface.isSurface:
                 grounds = {ground_id: newSurface}
+            else:
+                _warn_invalid_surface(building, ground_id)
 
         roofs = {}
         if lod0RoofEdge_E != None:
@@ -304,6 +308,8 @@ def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element:
             newSurface = SurfaceGML(coordinates, roof_id, "LoD0_roofEdge", None)
             if newSurface.isSurface:
                 roof = {roof_id: newSurface}
+            else:
+                _warn_invalid_surface(building, roof_id)
 
         building.walls = walls
         building.roofs = roofs
@@ -353,10 +359,14 @@ def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element:
         newSurface = SurfaceGML(all_poylgons[roof_id], roof_id, "LoD1_roof", None)
         if newSurface.isSurface:
             roofs = {roof_id: newSurface}
+        else:
+            _warn_invalid_surface(building, roof_id)
         del all_poylgons[roof_id]
         newSurface = SurfaceGML(all_poylgons[ground_id], ground_id, "LoD1_ground", None)
         if newSurface.isSurface:
             grounds = {ground_id: newSurface}
+        else:
+            _warn_invalid_surface(building, ground_id)
         del all_poylgons[ground_id]
         
         walls = {}
@@ -364,6 +374,8 @@ def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element:
             newSurface = SurfaceGML(coordinates, wall_id, "LoD1_wall", None)
             if newSurface.isSurface:
                 walls[wall_id] = newSurface
+            else:
+                _warn_invalid_surface(building, wall_id)
     
         building.walls = walls
         building.roofs = roofs
@@ -373,13 +385,13 @@ def _get_building_surfaces_from_xml_element(building: AbstractBuilding, element:
         return
 
     # everything greater than LoD1
-    walls = _get_surface_dict_from_element(
+    walls = _get_surface_dict_from_element(building,
         element, nsmap, "bldg:boundedBy/bldg:WallSurface")
-    roofs = _get_surface_dict_from_element(
+    roofs = _get_surface_dict_from_element(building,
         element, nsmap, "bldg:boundedBy/bldg:RoofSurface")
-    grounds = _get_surface_dict_from_element(
+    grounds = _get_surface_dict_from_element(building,
         element, nsmap, "bldg:boundedBy/bldg:GroundSurface")
-    closure = _get_surface_dict_from_element(
+    closure = _get_surface_dict_from_element(building,
         element, nsmap, "bldg:boundedBy/bldg:ClosureSurface")
     
     # searching for LoD
@@ -425,7 +437,7 @@ def _get_polygon_coordinates_from_element(polygon_element: ET.Element, nsmap: di
     return np.array([float(x) for x in polyStr])
 
 
-def _get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
+def _get_surface_dict_from_element(building: AbstractBuilding, element: ET.Element, nsmap: dict, target_str: str, id_str: str = "") -> dict:
     """creates a dictionary from surfaces of lxml element
     
 
@@ -461,6 +473,8 @@ def _get_surface_dict_from_element(element: ET.Element, nsmap: dict, target_str:
         newSurface = SurfaceGML(coordinates, used_id, target_str.rsplit(":")[-1], poly_id)
         if newSurface.isSurface:
             result[used_id] = newSurface
+        else:
+            _warn_invalid_surface(building, used_id)
     return result
 
 
@@ -512,3 +526,19 @@ def _get_attrib_of_xml_element(element: ET.Element, nsmap: dict, target: str,
         if attrib in res_E.attrib.keys():
             return res_E.attrib[attrib]
     return None
+
+
+def _warn_invalid_surface(building: AbstractBuilding, surfaceID: str) -> None:
+    """logs warning about invalid surface
+
+    Parameters
+    ----------
+    building : AbstractBuilding
+        either Building or BuildingPart parent object of Surface
+    surfaceID : str
+        gml:id of incorrect Surface
+    """
+    if building.is_building_part:
+        logger.warning(f"Surface {surfaceID} of BuildingPart {building.gml_id} of Building {building.parent_gml_id} is not a valid surface")
+    else:
+        logger.warning(f"Surface {surfaceID} of Building {building.parent_gml_id} is not a valid surface")

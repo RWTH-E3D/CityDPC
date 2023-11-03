@@ -19,6 +19,7 @@ class AbstractBuilding():
         self.closure = {}
         self.roof_volume = None
         self.lod = None
+        self.is_building_part = None
 
         self.creationDate = None
         self.extRef_infromationsSystem = None
