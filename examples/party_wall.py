@@ -11,6 +11,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 from PyStadt.dataset import Dataset
+from PyStadt.tools.partywall import get_party_walls
 
 """
 This is an example script shows how party walls 
@@ -206,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # party
         current_data = Dataset()
         current_data.add_buildings_from_xml_file(fileName)
-        party_walls = current_data.check_for_party_walls()
+        party_walls = get_party_walls(current_data)
         print(f"party wall count= {len(party_walls)}")
 
         axLabelSign = 0
