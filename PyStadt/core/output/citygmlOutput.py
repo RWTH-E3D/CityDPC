@@ -115,7 +115,7 @@ def _add_building_to_cityModel_xml(dataset: Dataset, building: Building, parent_
         ET.SubElement(extObj_E, ET.QName(nClass.core, 'name')).text = building.extRef_objName
 
     for key, value in building.genericStrings.items():
-        newGenStr_E = ET.SubElement(building_E, ET.QName(nClass.core, 'creationDate'), name= key)
+        newGenStr_E = ET.SubElement(building_E, ET.QName(nClass.gen, 'stringAttribute'), name= key)
         ET.SubElement(newGenStr_E, ET.QName(nClass.gen, 'value')).text = value
 
     if building.function != None:
