@@ -10,13 +10,20 @@ newDataset = Dataset()
 from pyStadt.core.input.citygmlInput import load_buildings_from_xml_file
 load_buildings_from_xml_file(newDataset, "examples/files/EssenExample.gml")
 
+# to validate the geometries of the polygons within a dataset use
+res = cityGTV.validate_dataset(newDataset)
+# res is a nested dict with key : value pairs of:
+# <buildingId>_poly : valiDict
+# <buildingId>_bp : buildingPartDict
+# best to test it out yourself and look at one result
+
 # import pyproj package and initialize projections
 from pyproj import Proj
 iP = Proj("epsg:5555")
 oP = Proj("epsg:5555")
 
 # import cityGTV package
-from pyStadt.tools import cityGTV#
+from pyStadt.tools import cityGTV
 
 # transform dataset
 newNew = cityGTV.transform_dataset(newDataset, iP, oP, (360133.335, 5706839.754), (324219.701, 5641681.61), "EPSG:5555", 0, 0)
