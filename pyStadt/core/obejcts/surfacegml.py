@@ -1,9 +1,11 @@
-# taken from the bs2023-MaSh branch of TEASER plus, last update: Mar 11, 2023 9:23pm GMT+0100, slightly modified
+# taken from the bs2023-MaSh branch of TEASER plus,
+# last update: Mar 11, 2023 9:23pm GMT+0100, slightly modified
 import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
 
 from pyStadt.logger import logger
+
 
 class SurfaceGML(object):
     """Class for calculating attributes of CityGML surfaces
@@ -25,12 +27,13 @@ class SurfaceGML(object):
 
     """
 
-    def __init__(self,gml_surface,
-                 surface_id = None, surface_type = None, polygon_id = None):
+    def __init__(
+        self, gml_surface, surface_id=None, surface_type=None, polygon_id=None
+    ):
         self.gml_surface = gml_surface
         self.surface_id = surface_id
         self.surface_type = surface_type
-        self.polygon_id = polygon_id        
+        self.polygon_id = polygon_id
         self.surface_area = None
         self.surface_orientation = None
         self.surface_tilt = None
@@ -39,17 +42,26 @@ class SurfaceGML(object):
         useless_points = []
         split_surface = list(zip(*[iter(self.gml_surface)] * 3))
         for three_points in self.n_wise(split_surface, 3):
-            useless_points.append(self.check_if_points_on_line(np.asarray(three_points[1]), np.asarray(three_points[0]), np.asarray(three_points[2])))
+            useless_points.append(
+                self.check_if_points_on_line(
+                    np.asarray(three_points[1]),
+                    np.asarray(three_points[0]),
+                    np.asarray(three_points[2]),
+                )
+            )
         for element in split_surface:
             if element in useless_points:
                 split_surface.remove(element)
         self.gml_surface = list(chain(*split_surface))
         if len(self.gml_surface) < 9:
             self.isSurface = False
-            logger.error(f"WARNING! The surface {surface_id} - {polygon_id} has to few individual coordinates")
+            logger.error(
+                f"WARNING! The surface {surface_id} - {polygon_id} has to few "
+                + "individual coordinates"
+            )
             return
         self.isSurface = True
-        
+
         self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
         self.creationDate = None
 
@@ -94,8 +106,11 @@ class SurfaceGML(object):
         normal_1 = np.cross(vektor_1, vektor_2)
         z_axis = np.array([0, 0, 1])
 
-        self.surface_tilt = np.arccos(np.dot(normal_1, z_axis) / (LA.norm(
-            z_axis) * LA.norm(normal_1))) * 360 / (2 * np.pi)
+        self.surface_tilt = (
+            np.arccos(np.dot(normal_1, z_axis) / (LA.norm(z_axis) * LA.norm(normal_1)))
+            * 360
+            / (2 * np.pi)
+        )
 
         if self.surface_tilt == 180:
             self.surface_tilt = 0.0
@@ -130,7 +145,7 @@ class SurfaceGML(object):
 
         normal_1 = np.cross(vektor_1, vektor_2)
         normal_uni = normal_1 / LA.norm(normal_1)
-        
+
         self.normal_uni = normal_uni
 
         phi = None
@@ -185,16 +200,10 @@ class SurfaceGML(object):
             unit normal vector as a list
 
         """
-        x = np.linalg.det([[1, a[1], a[2]],
-                           [1, b[1], b[2]],
-                           [1, c[1], c[2]]])
-        y = np.linalg.det([[a[0], 1, a[2]],
-                           [b[0], 1, b[2]],
-                           [c[0], 1, c[2]]])
-        z = np.linalg.det([[a[0], a[1], 1],
-                           [b[0], b[1], 1],
-                           [c[0], c[1], 1]])
-        magnitude = (x**2 + y**2 + z**2)**.5
+        x = np.linalg.det([[1, a[1], a[2]], [1, b[1], b[2]], [1, c[1], c[2]]])
+        y = np.linalg.det([[a[0], 1, a[2]], [b[0], 1, b[2]], [c[0], 1, c[2]]])
+        z = np.linalg.det([[a[0], a[1], 1], [b[0], b[1], 1], [c[0], c[1], 1]])
+        magnitude = (x**2 + y**2 + z**2) ** 0.5
         return x / magnitude, y / magnitude, z / magnitude
 
     def poly_area(self, poly):
@@ -237,7 +246,6 @@ class SurfaceGML(object):
 
     @staticmethod
     def check_if_points_on_line(p, a, b):
-
         # normalized tangent vector
         d = np.divide(b - a, np.linalg.norm(b - a))
 
@@ -251,7 +259,6 @@ class SurfaceGML(object):
         # perpendicular distance component
         c = np.cross(p - a, d)
         if np.hypot(h, np.linalg.norm(c)) <= 0.01:
-
             return tuple(p)
         else:
             return None

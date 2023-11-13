@@ -281,7 +281,8 @@ class _Edge:
 def _is_poly_CPS(polyPoints: list) -> bool:
     """
     102: check if there is consecutive same points (CPS)??
-    Actually it checks for all points (except the last point) in a ring that are repeated.
+    Actually it checks for all points (except the last point) in a ring that are
+    repeated.
     Thus, it should be called as REPEATED_POINTS
 
     Parameters
@@ -313,7 +314,8 @@ def _orientation(pA: list, pB: list, pC: list, dim: str, tol: float) -> -1 | 0 |
         | B.x-C.x   B.y-C.y |
     which is the volume of vector CA, and CB.
     if the vloume is ZERO, then C is on line AB;
-    if the volume is positive, then C is on the left side of line AB; negative for the right side.
+    if the volume is positive, then C is on the left side of line AB; negative for the
+    right side.
 
 
     Parameters
@@ -390,7 +392,8 @@ def _is_seg_intersected(
     h0: list, t0: list, h1: list, t1: list, dim: str, tol: float
 ) -> bool:
     """
-    Unfortunately, points are in 3-dimension, so we have to check the intersection at xy, yz, xz planes.
+    Unfortunately, points are in 3-dimension, so we have to check the intersection at
+    xy, yz, xz planes.
     [Important] Assume our points are on a same plane (pass the planar test), then
     true intersection happens to all three planes "xy,yz,xz" at the same time.
 
@@ -685,17 +688,15 @@ def _validate_polygon(surface: SurfaceGML):
     res, maxDis = _is_poly_planar_DSTP(polyPoints)
     if not res:
         result += (
-            "Invalid: 203 NON_PLANAR_POLYGON_DISTANCE_PLANE. \nDistance_Deviation_in_meter = "
-            + str(maxDis)
-            + "\n"
+            "Invalid: 203 NON_PLANAR_POLYGON_DISTANCE_PLANE."
+            + f"\nDistance_Deviation_in_meter = {maxDis}\n"
         )
     # 204 – NON_PLANAR_POLYGON_NORMALS_DEVIATION
     res, maxDev = _is_poly_planar_normal(polyPoints)
     if not res:
         result += (
-            "Invalid: '204 NON_PLANAR_POLYGON_NORMALS_DEVIATION. \nAngle_Deviation_in_Degree = "
-            + str(maxDev)
-            + "\n"
+            "Invalid: '204 NON_PLANAR_POLYGON_NORMALS_DEVIATION."
+            + f"\nAngle_Deviation_in_Degree = {maxDis}\n"
         )
 
     # currently no support for multi ring cases

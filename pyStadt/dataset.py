@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 import math
 
 
-class Dataset():
+class Dataset:
     """
     class to input single or multiple files and gather basic information on them
 
@@ -32,7 +32,7 @@ class Dataset():
         int
             number of buildings within the dataset
         """
-        return len(self.buildings) 
+        return len(self.buildings)
 
     def get_building_list(self) -> list[Building]:
         """returns a list of all buildings in dataset

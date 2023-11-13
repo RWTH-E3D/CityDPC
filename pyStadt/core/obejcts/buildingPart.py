@@ -1,5 +1,6 @@
 from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
 
+
 class BuildingPart(AbstractBuilding):
     """extends _AbstractBuilding class
 

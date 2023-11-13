@@ -1,6 +1,5 @@
-class CoreAddress():
-    """object representing a core:Address element
-    """
+class CoreAddress:
+    """object representing a core:Address element"""
 
     def __init__(self) -> None:
         self.gml_id = None
@@ -12,7 +11,6 @@ class CoreAddress():
         self.thoroughfareNumber = None
         self.thoroughfareName = None
         self.postalCodeNumber = None
-
 
     def check_address(self, addressRestriciton: dict) -> bool:
         """checks if the address building matches the restrictions
@@ -52,5 +50,5 @@ class CoreAddress():
             elif key == "postalCodeNumber":
                 if self.postalCodeNumber != value:
                     return False
-            
+
             return True
