@@ -30,14 +30,14 @@ class Building(AbstractBuilding):
             true if building has building parts
         """
         return self.building_parts != []
-    
+
     def get_building_parts(self) -> list[BuildingPart]:
         """return a list of building parts of building
 
         Returns
         -------
         list[BuildingPart]
-            
+
         """
         return self.building_parts
 

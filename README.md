@@ -22,6 +22,9 @@ Take a look at the [issues](https://gitlab.e3d.rwth-aachen.de/e3d-software-tools
 ## Contributing
 If you want to contribute have a look over at the [issues](https://gitlab.e3d.rwth-aachen.de/e3d-software-tools/citypythonclass/-/issues). Either open a new one for a feature you would like to work on and add your comments or find an issue missing an assignee and start working. Feel also free to reach out to one of the developers!
 
+#### Fromatting & Linting
+The code is formatted using [Python Black](https://github.com/psf/black) and linted using [flake8](https://github.com/PyCQA/flake8).
+
 ## Authors and acknowledgment
 Lorem ipsum
 

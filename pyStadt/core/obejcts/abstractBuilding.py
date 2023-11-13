@@ -1,8 +1,9 @@
 from pyStadt.core.obejcts.address import CoreAddress
 
-class AbstractBuilding():
-    """contains all methods and properties that are use by buildings and building parts
-    """
+
+class AbstractBuilding:
+    """contains all methods and properties that are use by
+    buildings and building parts"""
 
     def __init__(self, id: str) -> None:
         """initialize new AbstractBuilding
@@ -24,7 +25,7 @@ class AbstractBuilding():
         self.creationDate = None
         self.extRef_infromationsSystem = None
         self.extRef_objName = None
-        
+
         self.genericStrings = {}
 
         self.function = None
@@ -38,7 +39,6 @@ class AbstractBuilding():
         self.terrainIntersections = None
 
         self.address = CoreAddress()
-        
 
     def has_3Dgeometry(self) -> bool:
         """checks if abstractBuilding has geometry
@@ -49,9 +49,13 @@ class AbstractBuilding():
         Returns
         -------
         bool
-            
+
         """
-        if self.roofs != {} and self.grounds != {} and (self.walls != {} or self.closure != {}):
+        if (
+            self.roofs != {}
+            and self.grounds != {}
+            and (self.walls != {} or self.closure != {})
+        ):
             return True
         else:
             return False

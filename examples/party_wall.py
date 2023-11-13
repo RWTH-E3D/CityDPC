@@ -26,7 +26,7 @@ def getPosListOfSurface(surface_E, namespace):
     """extracts a numpy array of coordinates from a surface"""
     for polygon_E in surface_E.findall('.//gml:Polygon',namespace):
         Pts = polygon_E.find('.//gml:posList',namespace)
-        if Pts != None:
+        if Pts is not None:
             posList = np.array(str(Pts.text).split(' '))
         else:
             points = []

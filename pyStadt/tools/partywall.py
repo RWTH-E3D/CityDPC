@@ -11,6 +11,7 @@ import math
 from shapely import geometry as slyGeom
 import shapely
 
+
 def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
     """checks for adjacent walls in dataset
 
@@ -32,7 +33,12 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
         if building_0.has_3Dgeometry():
             for key, ground in building_0.grounds.items():
                 polys_in_building_0.append(
-                    {"poly_id": key, "coor": ground.gml_surface_2array, "parent": building_0})
+                    {
+                        "poly_id": key,
+                        "coor": ground.gml_surface_2array,
+                        "parent": building_0,
+                    }
+                )
 
         # get coordinates from all groundSurface of buildingPart geometries
         if building_0.has_building_parts():
@@ -40,22 +46,26 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                 if b_part.has_3Dgeometry():
                     for key, ground in b_part.grounds.items():
                         polys_in_building_0.append(
-                            {"poly_id": key, "coor": ground.gml_surface_2array, "parent": b_part})
+                            {
+                                "poly_id": key,
+                                "coor": ground.gml_surface_2array,
+                                "parent": b_part,
+                            }
+                        )
 
         # self collision check
-        # this includes all walls of the building (and building parts) geometry 
+        # this includes all walls of the building (and building parts) geometry
         for j, poly_0 in enumerate(polys_in_building_0):
             p_0 = _create_buffered_polygon(poly_0["coor"])
-            for poly_1 in polys_in_building_0[j+1:]:
+            for poly_1 in polys_in_building_0[j + 1 :]:
                 p_1 = slyGeom.Polygon(poly_1["coor"])
                 if not p_0.intersection(p_1).is_empty:
-                    party_walls = _find_party_walls(
-                        poly_0["parent"], poly_1["parent"])
+                    party_walls = _find_party_walls(poly_0["parent"], poly_1["parent"])
                     if party_walls != []:
                         all_party_walls.extend(party_walls)
 
         # collision with other buildings
-        for building_1 in dataset.get_building_list()[i+1:]:
+        for building_1 in dataset.get_building_list()[i + 1 :]:
             # collision with the building itself
             if building_1.has_3Dgeometry():
                 for poly_0 in polys_in_building_0:
@@ -64,7 +74,8 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                         p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                         if not p_0.intersection(p_1).is_empty:
                             party_walls = _find_party_walls(
-                                poly_0["parent"], building_1)
+                                poly_0["parent"], building_1
+                            )
                             if party_walls != []:
                                 all_party_walls.extend(party_walls)
                             break
@@ -80,14 +91,17 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                                 if not p_0.intersection(p_1).is_empty:
                                     # To-Do: building (or bp) with other building part
                                     party_walls = _find_party_walls(
-                                        poly_0["parent"], b_part)
+                                        poly_0["parent"], b_part
+                                    )
                                     if party_walls != []:
-                                        all_party_walls.extend(
-                                            party_walls)
+                                        all_party_walls.extend(party_walls)
                                     break
     return all_party_walls
 
-def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: AbstractBuilding) -> list[str, str, str, str, float, list]:
+
+def _find_party_walls(
+    buildingLike_0: AbstractBuilding, buildingLike_1: AbstractBuilding
+) -> list[str, str, str, str, float, list]:
     """takes to buildings and searches for party walls
 
     Parameters
@@ -95,7 +109,7 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
     buildingLike_0 : AbstractBuilding
         first building to check
     buildingLike_1 : AbstractBuilding
-        second building to check 
+        second building to check
 
     Returns
     -------
@@ -111,12 +125,17 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
     # b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
     for gml_id_0, surface_0 in b_0_surfaces.items():
         for gml_id_1, surface_1 in b_1_surfaces.items():
-            # consider walls if there norm vectors equal or inverse or don't differ more than 15 degrees (= 0.9659 cos(rad))
-            if np.array_equal(surface_0.normal_uni, surface_1.normal_uni) or \
-               np.array_equal(surface_0.normal_uni, -surface_1.normal_uni) or \
-               np.abs(np.dot(surface_0.normal_uni, surface_1.normal_uni)) > 0.9659:
+            # consider walls if there norm vectors equal or inverse or don't differ
+            # more than 15 degrees (= 0.9659 cos(rad))
+            if (
+                np.array_equal(surface_0.normal_uni, surface_1.normal_uni)
+                or np.array_equal(surface_0.normal_uni, -surface_1.normal_uni)
+                or np.abs(np.dot(surface_0.normal_uni, surface_1.normal_uni)) > 0.9659
+            ):
                 # check if rotation is needed
-                if np.array_equal(surface_0.normal_uni, np.array([0, 1, 0])) or np.array_equal(surface_0.normal_uni, -np.array([0, 1, 0])):
+                if np.array_equal(
+                    surface_0.normal_uni, np.array([0, 1, 0])
+                ) or np.array_equal(surface_0.normal_uni, -np.array([0, 1, 0])):
                     # rotation not needed
                     poly_0_rotated = b_0_surfaces[gml_id_0].gml_surface_2array
                     poly_1_rotated = b_1_surfaces[gml_id_1].gml_surface_2array
@@ -128,23 +147,41 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
                     t_surf_0 = b_0_surfaces[gml_id_0].gml_surface_2array
                     t_surf_1 = b_1_surfaces[gml_id_1].gml_surface_2array
                     # get delta in x- and y-direction for roation
-                    # make sure that the vector between the 1st and 2nd point isn't [0 0 *]
-                    if not (t_surf_0[0][0] == t_surf_0[1][0] and t_surf_0[0][1] == t_surf_0[1][1]):
+                    # make sure that the vector between the 1st and 2nd point
+                    # isn't [0 0 *]
+                    if not (
+                        t_surf_0[0][0] == t_surf_0[1][0]
+                        and t_surf_0[0][1] == t_surf_0[1][1]
+                    ):
                         delta_x = t_surf_0[0][0] - t_surf_0[1][0]
                         delta_y = t_surf_0[0][1] - t_surf_0[1][1]
                     else:
-                        # in case the vector between the 1st and 2nd coordiante is only vertical
+                        # in case the vector between the 1st and 2nd coordiante is only
+                        # vertical
                         delta_x = t_surf_0[0][0] - t_surf_0[2][0]
                         delta_y = t_surf_0[0][1] - t_surf_0[2][1]
 
-                    rad_angle = -math.atan2(delta_y, delta_x) if delta_x != 0 else math.pi/2
+                    rad_angle = (
+                        -math.atan2(delta_y, delta_x) if delta_x != 0 else math.pi / 2
+                    )
                     target_y = t_surf_0[0][1]
                     rot_point = t_surf_0[0]
-                    poly_0_rotated = _rotate_polygon_around_point_in_x_y(t_surf_0, rot_point, rad_angle)
-                    poly_1_rotated = _rotate_polygon_around_point_in_x_y(t_surf_1, rot_point, rad_angle)
+                    poly_0_rotated = _rotate_polygon_around_point_in_x_y(
+                        t_surf_0, rot_point, rad_angle
+                    )
+                    poly_1_rotated = _rotate_polygon_around_point_in_x_y(
+                        t_surf_1, rot_point, rad_angle
+                    )
 
-                # check distance in rotated y direction (if distance is larger than 0.15 [uom] walls shouldn't be considered as party walls)
-                if abs(np.mean(poly_0_rotated, axis=0)[1] - np.mean(poly_1_rotated, axis=0)[1]) > 0.15:
+                # check distance in rotated y direction (if distance is larger than
+                # 0.15 [uom] walls shouldn't be considered as party walls)
+                if (
+                    abs(
+                        np.mean(poly_0_rotated, axis=0)[1]
+                        - np.mean(poly_1_rotated, axis=0)[1]
+                    )
+                    > 0.15
+                ):
                     continue
 
                 # delete 3rd axis
@@ -157,25 +194,61 @@ def _find_party_walls(buildingLike_0: AbstractBuilding, buildingLike_1: Abstract
                 intersection = p_0.intersection(p_1)
                 if not intersection.is_empty:
                     if intersection.area > 5:
-                        id_0 = buildingLike_0.gml_id if not buildingLike_0.is_building_part else buildingLike_0.parent_gml_id + \
-                            "/" + buildingLike_0.gml_id
-                        id_1 = buildingLike_1.gml_id if not buildingLike_1.is_building_part else buildingLike_1.parent_gml_id + \
-                            "/" + buildingLike_1.gml_id
-                        if type(intersection) == shapely.Polygon:
-                            threeD_contact = _get_collision_unrotated(intersection, rot_point, rad_angle, target_y)
+                        id_0 = (
+                            buildingLike_0.gml_id
+                            if not buildingLike_0.is_building_part
+                            else buildingLike_0.parent_gml_id
+                            + "/"
+                            + buildingLike_0.gml_id
+                        )
+                        id_1 = (
+                            buildingLike_1.gml_id
+                            if not buildingLike_1.is_building_part
+                            else buildingLike_1.parent_gml_id
+                            + "/"
+                            + buildingLike_1.gml_id
+                        )
+                        if type(intersection) is shapely.Polygon:
+                            threeD_contact = _get_collision_unrotated(
+                                intersection, rot_point, rad_angle, target_y
+                            )
                             party_walls.append(
-                                [id_0, gml_id_0, id_1, gml_id_1, intersection.area, threeD_contact])
+                                [
+                                    id_0,
+                                    gml_id_0,
+                                    id_1,
+                                    gml_id_1,
+                                    intersection.area,
+                                    threeD_contact,
+                                ]
+                            )
 
-                        elif type(intersection) == shapely.GeometryCollection:
+                        elif type(intersection) is shapely.GeometryCollection:
                             for section in intersection.geoms:
-                                if type(section) == shapely.Polygon and section.area > 5:
-                                    threeD_contact = _get_collision_unrotated(section, rot_point, rad_angle, target_y)
+                                if (
+                                    type(section) is shapely.Polygon
+                                    and section.area > 5
+                                ):
+                                    threeD_contact = _get_collision_unrotated(
+                                        section, rot_point, rad_angle, target_y
+                                    )
                                     party_walls.append(
-                                        [id_0, gml_id_0, id_1, gml_id_1, section.area, threeD_contact])
+                                        [
+                                            id_0,
+                                            gml_id_0,
+                                            id_1,
+                                            gml_id_1,
+                                            section.area,
+                                            threeD_contact,
+                                        ]
+                                    )
 
     return party_walls
 
-def _create_buffered_polygon(coordinates: np.ndarray, buffer: float = 0.15) -> slyGeom.Polygon:
+
+def _create_buffered_polygon(
+    coordinates: np.ndarray, buffer: float = 0.15
+) -> slyGeom.Polygon:
     """creates a buffered shapely polygon
 
     Parameters
@@ -193,7 +266,13 @@ def _create_buffered_polygon(coordinates: np.ndarray, buffer: float = 0.15) -> s
     poly = slyGeom.Polygon(coordinates)
     return poly.buffer(buffer)
 
-def _get_collision_unrotated(intersection_poly: shapely.Polygon, rotation_center: list, rot_angle: float, target_y: float) -> list:
+
+def _get_collision_unrotated(
+    intersection_poly: shapely.Polygon,
+    rotation_center: list,
+    rot_angle: float,
+    target_y: float,
+) -> list:
     """calculates the 3D coordinates of intersection
 
     Parameters
@@ -203,7 +282,7 @@ def _get_collision_unrotated(intersection_poly: shapely.Polygon, rotation_center
     rotation_center : list
         coordinate around which the polygon should be rotaded
     rot_angle : float
-        roation angle 
+        roation angle
     target_y : float
         target y coordiante
 
@@ -216,13 +295,17 @@ def _get_collision_unrotated(intersection_poly: shapely.Polygon, rotation_center
     n = []
     for x, y in zip(xx.tolist(), yy.tolist()):
         n.append([x, target_y, y])
-    if type(rot_angle) != None:
+    if type(rot_angle) is not None:
         return _rotate_polygon_around_point_in_x_y(n, rotation_center, -rot_angle)
     else:
-        return  n
-    
-def _rotate_polygon_around_point_in_x_y(polygon: list, rotation_center: list, rot_angle: float) -> list:
-    """rotates a polygon around a rotation center by an angle (in radians) in counter clockwise direction
+        return n
+
+
+def _rotate_polygon_around_point_in_x_y(
+    polygon: list, rotation_center: list, rot_angle: float
+) -> list:
+    """rotates a polygon around a rotation center by an angle (in radians) in
+    counter-clockwise direction
 
     Parameters
     ----------
