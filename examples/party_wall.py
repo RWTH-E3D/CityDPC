@@ -1,6 +1,5 @@
 import sys
 import matplotlib
-
 matplotlib.use('Qt5Agg')
 
 from PySide6 import QtWidgets
@@ -8,18 +7,26 @@ from PySide6 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
-
-from dataset import Dataset
-
 import numpy as np
 import xml.etree.ElementTree as ET
+
+from pyStadt.dataset import Dataset
+from pyStadt.tools.partywall import get_party_walls
+
+"""
+This is an example script shows how party walls 
+(adjacent walls) can be detected using the pyStadt package.
+Feel free to change the fileName (including path) to 
+visualise your file.
+"""
+fileName = "examples/files/EssenExample.gml"
+
 
 def getPosListOfSurface(surface_E, namespace):
     """extracts a numpy array of coordinates from a surface"""
     for polygon_E in surface_E.findall('.//gml:Polygon',namespace):
         Pts = polygon_E.find('.//gml:posList',namespace)
-        if Pts != None:
+        if Pts is not None:
             posList = np.array(str(Pts.text).split(' '))
         else:
             points = []
@@ -46,9 +53,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Create the maptlotlib FigureCanvas object,
         # which defines a single set of axes as self.axes.
         sc = MplCanvas(self, width=5, height=4, dpi=100)
-        # read xml
-        fileName = r"D:\downloads\Essen-Vogelheim_LoD2_YOCed.gml"
-
         tree = ET.parse(fileName)
         root = tree.getroot()
 
@@ -203,9 +207,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # party
         current_data = Dataset()
         current_data.add_buildings_from_xml_file(fileName)
-        party_walls = current_data.check_for_party_walls()
+        party_walls = get_party_walls(current_data)
         print(f"party wall count= {len(party_walls)}")
-        # print(party_walls)
 
         axLabelSign = 0
         for _, _, _, _, _, wall in party_walls:
@@ -249,9 +252,6 @@ class MainWindow(QtWidgets.QMainWindow):
             #polygon
             verts = [list(zip(xs,ys,zs))]
             sc.axes.add_collection(Poly3DCollection(verts,alpha=0.1,facecolor='gold'))
-
-
-        
 
                     
         # Set Equal Boundaries for xyz axis, using exact range of coordinates

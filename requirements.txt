@@ -1,4 +1,5 @@
-numpy
 lxml
+numpy
 scipy
-shapley
+shapely
+pyproj
