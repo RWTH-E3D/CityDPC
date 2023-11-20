@@ -502,12 +502,12 @@ def _get_polygon_coordinates_from_element(
     # searching for list of coordinates
     posList_E = polygon_element.find(".//gml:posList", nsmap)
     if posList_E is not None:
-        polyStr = posList_E.text.split(" ")
+        polyStr = posList_E.text.strip().split(" ")
     else:
         # searching for individual coordinates in polygon
         pos_Es = polygon_element.findall(".//gml:pos", nsmap)
         for pos_E in pos_Es:
-            polyStr.extend(pos_E.text.split(" "))
+            polyStr.extend(pos_E.text.strip().split(" "))
     return np.array([float(x) for x in polyStr])
 
 
