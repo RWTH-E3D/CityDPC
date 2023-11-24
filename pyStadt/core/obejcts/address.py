@@ -12,6 +12,28 @@ class CoreAddress:
         self.thoroughfareName = None
         self.postalCodeNumber = None
 
+    def address_is_empty(self) -> bool:
+        """checks if address object is empty
+
+        Returns
+        -------
+        bool
+            True:  address is empty
+            False: address is not empty
+        """
+        if (
+            self.countryName == None
+            and self.locality_type == None
+            and self.localityName == None
+            and self.thoroughfare_type == None
+            and self.thoroughfareNumber == None
+            and self.thoroughfareName == None
+            and self.postalCodeNumber == None
+        ):
+            return True
+        else:
+            return False
+
     def check_address(self, addressRestriciton: dict) -> bool:
         """checks if the address building matches the restrictions
 
