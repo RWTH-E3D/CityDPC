@@ -88,10 +88,10 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0"):
 
             bp_E = _add_building_to_cityModel_xml(dataset, buildingPart, cOBP_E, nClass)
 
-            if building.address is not None:
+            if not buildingPart.address.address_is_empty():
                 _add_address_to_xml_building(buildingPart, bp_E, nClass)
 
-        if building.address is not None:
+        if not building.address.address_is_empty():
             _add_address_to_xml_building(building, building_E, nClass)
 
     lcorner.text = " ".join(map(str, dataset._minimum))
@@ -405,11 +405,17 @@ def _add_address_to_xml_building(
                 country_E, ET.QName(nClass.xal, "CountryName")
             ).text = building.address.countryName
 
-        locality_E = ET.SubElement(
-            country_E,
-            ET.QName(nClass.xal, "Locality"),
-            attrib={"Type": building.address.locality_type},
-        )
+        if building.address.locality_type is not None:
+            locality_E = ET.SubElement(
+                country_E,
+                ET.QName(nClass.xal, "Locality"),
+                attrib={"Type": building.address.locality_type},
+            )
+        else:
+            locality_E = ET.SubElement(
+                country_E,
+                ET.QName(nClass.xal, "Locality"),
+            )
 
         if building.address.localityName is not None:
             ET.SubElement(
