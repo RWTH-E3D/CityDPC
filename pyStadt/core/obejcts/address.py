@@ -22,13 +22,13 @@ class CoreAddress:
             False: address is not empty
         """
         if (
-            self.countryName == None
-            and self.locality_type == None
-            and self.localityName == None
-            and self.thoroughfare_type == None
-            and self.thoroughfareNumber == None
-            and self.thoroughfareName == None
-            and self.postalCodeNumber == None
+            self.countryName is None
+            and self.locality_type is None
+            and self.localityName is None
+            and self.thoroughfare_type is None
+            and self.thoroughfareNumber is None
+            and self.thoroughfareName is None
+            and self.postalCodeNumber is None
         ):
             return True
         else:
