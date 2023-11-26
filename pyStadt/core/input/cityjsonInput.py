@@ -299,6 +299,9 @@ def _add_surface_to_building(
             f"{building.gml_id}_{surfaceType}_{'_'.join([str(i) for i in depthInfo])}"
         )
 
+    if surfaceCoor[0] != surfaceCoor[-1]:
+        surfaceCoor.append(surfaceCoor[0])
+
     building.add_surface(
         SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType)
     )
