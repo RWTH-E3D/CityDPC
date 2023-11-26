@@ -1,4 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pyStadt.core.obejcts.surfacegml import SurfaceGML
+
+
 from pyStadt.core.obejcts.address import CoreAddress
+from pyStadt.logger import logger
 
 
 class AbstractBuilding:
@@ -59,3 +67,27 @@ class AbstractBuilding:
             return True
         else:
             return False
+
+    def add_surface(self, surface: SurfaceGML) -> None:
+        """add a surface to the building
+
+        Parameters
+        ----------
+        surface : SurfaceGML
+            surface to add
+        """
+        equiv = {
+            "WallSurface": "walls",
+            "RoofSurface": "roofs",
+            "GroundSurface": "grounds",
+            "ClosureSurface": "closure",
+        }
+        if surface.surface_type in equiv.keys():
+            surfDict = getattr(self, equiv[surface.surface_type])
+            if surface.surface_id in surfDict:
+                logger.error(
+                    f"A surface {surface.surface_id} of type"
+                    + f" {surface.surface_type} already exists in the building"
+                )
+                return
+            surfDict[surface.surface_id] = surface
