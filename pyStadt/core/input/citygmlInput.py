@@ -13,11 +13,7 @@ from scipy.spatial import ConvexHull
 import matplotlib.path as mplP
 
 from pyStadt.logger import logger
-from pyStadt.tools.cityATB import (
-    _border_check,
-    check_building_for_address,
-    check_if_building_in_coordinates,
-)
+from pyStadt.tools.cityATB import _border_check, check_building_for_border_and_address
 from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
 from pyStadt.core.obejcts.surfacegml import SurfaceGML
@@ -126,25 +122,10 @@ def load_buildings_from_xml_file(
                 )
                 continue
 
-            if border is not None:
-                res_coor = check_if_building_in_coordinates(
-                    new_building, borderCoordinates, border
-                )
-
-            if addressRestriciton is not None:
-                res_addr = check_building_for_address(new_building, addressRestriciton)
-
-            if border is None and addressRestriciton is None:
-                pass
-            elif border is not None and addressRestriciton is None:
-                if not res_coor:
-                    continue
-            elif border is None and addressRestriciton is not None:
-                if not res_addr:
-                    continue
-            else:
-                if not (res_coor and res_addr):
-                    continue
+            if not check_building_for_border_and_address(
+                new_building, borderCoordinates, addressRestriciton, border
+            ):
+                continue
 
             dataset.buildings[building_id] = new_building
             building_ids.append(building_id)
