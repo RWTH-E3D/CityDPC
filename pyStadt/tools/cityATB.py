@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyStadt.dataset import Dataset
     from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from pyStadt.core.obejcts.building import Building
 
 import numpy as np
 import matplotlib.path as mplP
@@ -274,3 +275,46 @@ def _border_check(
         if n_border.contains_point(point):
             return True
     return False
+
+
+def check_building_for_border_and_address(
+    building: Building,
+    borderCoordinates: list[list[float]] | None,
+    addressRestriciton: dict | None,
+    border: mplP.Path | None,
+) -> bool:
+    """checks if a building is located within the border and has the given address
+
+    Parameters
+    ----------
+    building : Building
+        building to check
+    borderCordinates : list[list[float]], optional
+        2D array of 2D coordinates
+    addressRestriciton : dict, optional
+        key: value pair of CoreAddress attribute and wanted value
+    border : mplP.Path, optional
+        borderCoordinates as a matplotlib.path.Path
+
+    Returns
+    -------
+    bool
+        True if building is located within border and has the given address
+    """
+    if borderCoordinates is None and addressRestriciton is None:
+        return True
+
+    if borderCoordinates is not None and border is None:
+        border = mplP.Path(np.array(borderCoordinates))
+
+    if border is not None:
+        res_coor = check_if_building_in_coordinates(building, borderCoordinates, border)
+
+    if not building.address.address_is_empty():
+        res_addr = building.address.check_address(addressRestriciton)
+
+    if border is not None and addressRestriciton is None:
+        return res_coor
+    elif border is None and addressRestriciton is not None:
+        return res_addr
+    return res_coor and res_addr
