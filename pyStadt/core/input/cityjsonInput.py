@@ -10,6 +10,7 @@ import numpy as np
 from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
 from pyStadt.core.obejcts.surfacegml import SurfaceGML
+from pyStadt.core.obejcts.fileUtil import CityFile
 from pyStadt.logger import logger
 
 
@@ -26,6 +27,7 @@ def load_buildings_from_json_file(
     filepath : str
         filepath to cityJSON file
     """
+    logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
     requiredMembers = ["type", "version", "transform", "CityObjects", "vertices"]
 
@@ -34,7 +36,9 @@ def load_buildings_from_json_file(
 
     for requiredKey in requiredMembers:
         if requiredKey not in data.keys():
-            logger.warning(f"invalid CityJSON file ({filepath}) - missing 'type'")
+            logger.warning(
+                f"invalid CityJSON file ({filepath}) - missing {requiredKey}"
+            )
             return
 
     if data["type"] != "CityJSON":
@@ -46,6 +50,28 @@ def load_buildings_from_json_file(
             f"unsupported CityJSON verion ({data['version']}) " + f"in {filepath}"
         )
         return
+
+    newCityFile = CityFile(filepath, f"CityJSONv{data['version']}", [], [])
+    if "metadata" in data.keys():
+        if "geographicalExtent" in data["metadata"].keys():
+            newCityFile.lowerCorner = data["metadata"]["geographicalExtent"][0:3]
+            newCityFile.upperCorner = data["metadata"]["geographicalExtent"][3:6]
+        if "title" in data["metadata"].keys():
+            newCityFile.gmlName = data["metadata"]["title"]
+        if "referenceSystem" in data["metadata"].keys():
+            if dataset.srsName is None:
+                dataset.srsName = data["metadata"]["referenceSystem"].split("/crs/")[-1]
+            elif (
+                dataset.srsName
+                == data["metadata"]["referenceSystem"].split("/crs/")[-1]
+            ):
+                pass
+            else:
+                logger.error(
+                    "Unable to load file! Given referenceSystem "
+                    + f"({data['metadata']['referenceSystem']}) does not match Dataset "
+                    + f"srsName ({dataset.srsName})"
+                )
 
     # transform all vertices to global coordinates
     vertices = data["vertices"]
@@ -63,6 +89,7 @@ def load_buildings_from_json_file(
             + data["transform"]["translate"][2]
         )
 
+    builingIDs = []
     buildingPartsToAssign = []
 
     for id, value in data["CityObjects"].items():
@@ -107,6 +134,10 @@ def load_buildings_from_json_file(
             logger.warning(
                 f"invalid CityJSON file ({filepath}) - BuildingPart without parent"
             )
+
+    newCityFile.building_ids = builingIDs
+    dataset._files.append(newCityFile)
+    logger.info(f"finished loading buildings from CityJSON file {filepath}")
 
 
 def _load_building_information_from_json(
