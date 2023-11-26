@@ -162,7 +162,7 @@ def load_buildings_from_xml_file(
     # store file related information
     newCFile = CityFile(
         filepath,
-        cityGMLversion,
+        f"CityGMLv{cityGMLversion}",
         building_ids,
         notLoadedCityObjectMembers,
         ades,
