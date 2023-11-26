@@ -7,16 +7,24 @@ if TYPE_CHECKING:
 
 import json
 import numpy as np
+import matplotlib.path as mplP
+
 from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
 from pyStadt.core.obejcts.surfacegml import SurfaceGML
 from pyStadt.core.obejcts.fileUtil import CityFile
+from pyStadt.tools.cityATB import (
+    _border_check,
+    check_building_for_border_and_address
+)
 from pyStadt.logger import logger
 
 
 def load_buildings_from_json_file(
     dataset: Dataset,
     filepath: str,
+    borderCoordinates: list = None,
+    addressRestriciton: dict = None,
 ):
     """adds buldings from filepath to dataset
 
@@ -26,6 +34,11 @@ def load_buildings_from_json_file(
         Dataset to add buildings to
     filepath : str
         filepath to cityJSON file
+    borderCoordinates : list, optional
+        list of coordinates ([x0, y0], [x1, y1], ..) in fileCRS to restrict the dataset,
+        by default None
+    addressRestriciton : dict, optional
+        dictionary of address values to restrict the dataset, by default None
     """
     logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
@@ -51,11 +64,22 @@ def load_buildings_from_json_file(
         )
         return
 
+    border = None
     newCityFile = CityFile(filepath, f"CityJSONv{data['version']}", [], [])
     if "metadata" in data.keys():
         if "geographicalExtent" in data["metadata"].keys():
             newCityFile.lowerCorner = data["metadata"]["geographicalExtent"][0:3]
             newCityFile.upperCorner = data["metadata"]["geographicalExtent"][3:6]
+            if borderCoordinates is not None:
+                fileEnvelopeCoor = [
+                    newCityFile.lowerCorner[0:2],
+                    newCityFile.upperCorner[0:2],
+                ]
+                border = mplP.Path(np.array(borderCoordinates))
+                if not _border_check(border, borderCoordinates, fileEnvelopeCoor):
+                    # file envelope is outside of the border coordinates
+                    return
+
         if "title" in data["metadata"].keys():
             newCityFile.gmlName = data["metadata"]["title"]
         if "referenceSystem" in data["metadata"].keys():
@@ -89,7 +113,7 @@ def load_buildings_from_json_file(
             + data["transform"]["translate"][2]
         )
 
-    builingIDs = []
+    buildingIDs = []
     buildingPartsToAssign = []
 
     for id, value in data["CityObjects"].items():
@@ -102,6 +126,7 @@ def load_buildings_from_json_file(
                 )
                 continue
             dataset.buildings[id] = newBuilding
+            buildingIDs.append(id)
 
         elif value["type"] == "BuildingPart":
             newBuildingPart = BuildingPart(id)
@@ -135,7 +160,15 @@ def load_buildings_from_json_file(
                 f"invalid CityJSON file ({filepath}) - BuildingPart without parent"
             )
 
-    newCityFile.building_ids = builingIDs
+    if border is not None or addressRestriciton is not None:
+        for buildingID in buildingIDs:
+            building = dataset.buildings[buildingID]
+            if not check_building_for_border_and_address(
+                building, borderCoordinates, addressRestriciton, border
+            ):
+                continue
+
+    newCityFile.building_ids = buildingIDs
     dataset._files.append(newCityFile)
     logger.info(f"finished loading buildings from CityJSON file {filepath}")
 
