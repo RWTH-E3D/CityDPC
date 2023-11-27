@@ -134,8 +134,6 @@ def load_buildings_from_json_file(
 
             if "parents" in value.keys():
                 newBuildingPart.parent_gml_id = value["parents"][0]
-            elif "members" in value.keys():
-                newBuildingPart.parent_gml_id = value["members"][0]
             else:
                 logger.warning(
                     f"invalid CityJSON file ({filepath}) - BuildingPart without "
