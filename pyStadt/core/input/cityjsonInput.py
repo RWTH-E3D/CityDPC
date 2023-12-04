@@ -22,6 +22,8 @@ def load_buildings_from_json_file(
     filepath: str,
     borderCoordinates: list = None,
     addressRestriciton: dict = None,
+    ignoreRefSytem: bool = False,
+    dontTransform: bool = False,
 ):
     """adds buldings from filepath to dataset
 
@@ -36,6 +38,10 @@ def load_buildings_from_json_file(
         by default None
     addressRestriciton : dict, optional
         dictionary of address values to restrict the dataset, by default None
+    ignoreRefSytem : bool, optional
+        ignore reference system errors, by default False
+    dontTransform : bool, optional
+        if True, vertices are not transformed to global coordinates, by default False
     """
     logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
@@ -87,6 +93,8 @@ def load_buildings_from_json_file(
                 == data["metadata"]["referenceSystem"].split("/crs/")[-1]
             ):
                 pass
+            elif ignoreRefSytem:
+                pass
             else:
                 logger.error(
                     "Unable to load file! Given referenceSystem "
@@ -96,19 +104,20 @@ def load_buildings_from_json_file(
 
     # transform all vertices to global coordinates
     vertices = data["vertices"]
-    for vertex in vertices:
-        vertex[0] = (
-            vertex[0] * data["transform"]["scale"][0]
-            + data["transform"]["translate"][0]
-        )
-        vertex[1] = (
-            vertex[1] * data["transform"]["scale"][1]
-            + data["transform"]["translate"][1]
-        )
-        vertex[2] = (
-            vertex[2] * data["transform"]["scale"][2]
-            + data["transform"]["translate"][2]
-        )
+    if not dontTransform:
+        for vertex in vertices:
+            vertex[0] = (
+                vertex[0] * data["transform"]["scale"][0]
+                + data["transform"]["translate"][0]
+            )
+            vertex[1] = (
+                vertex[1] * data["transform"]["scale"][1]
+                + data["transform"]["translate"][1]
+            )
+            vertex[2] = (
+                vertex[2] * data["transform"]["scale"][2]
+                + data["transform"]["translate"][2]
+            )
 
     buildingIDs = []
 
