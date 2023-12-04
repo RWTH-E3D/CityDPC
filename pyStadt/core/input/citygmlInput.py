@@ -157,8 +157,18 @@ def load_buildings_from_xml_file(
     if gmlName_E is not None:
         gmlName = gmlName_E.text
 
+    notLoadedCityObjectMembers = cityObjectMembers_in_file - len(building_ids)
+
     # store file related information
-    newCFile = CityFile(filepath, cityGMLversion, building_ids, ades, gmlName)
+    newCFile = CityFile(
+        filepath,
+        cityGMLversion,
+        building_ids,
+        notLoadedCityObjectMembers,
+        ades,
+        srsName=fileSRSName,
+        gmlName=gmlName,
+    )
     if lowerCorner:
         newCFile.lowerCorner = (float(lowerCorner[0]), float(lowerCorner[1]))
     if upperCorner:

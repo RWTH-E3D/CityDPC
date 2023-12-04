@@ -32,35 +32,41 @@ def analysis(dataset: Dataset) -> dict:
         - number_of_buildingParts
 
     """
+    fullResult = {}
+    for singleFile in dataset._files:
+        fileResult = {}
 
-    result = {}
+        fileResult["gml_version"] = singleFile.cityGMLversion
+        if singleFile.gmlName is not None:
+            fileResult["gml_name"] = singleFile.gmlName
+        else:
+            fileResult["gml_name"] = singleFile.identifier
+        fileResult["crs"] = singleFile.srsName
 
-    result["gml_version"] = dataset._files[0].cityGMLversion
-    result["gml_name"] = dataset._files[0].gmlName
-    result["crs"] = dataset.srsName
+        all_LoDs = []
+        buildingPart_counter = 0
+        for building_id in singleFile.building_ids:
+            building = dataset.buildings[building_id]
+            if building.lod not in all_LoDs:
+                all_LoDs.append(building.lod)
+            if building.has_building_parts():
+                for buildingPart in building.building_parts:
+                    buildingPart_counter -= -1
+                    if buildingPart.lod not in all_LoDs:
+                        all_LoDs.append(buildingPart.lod)
+        all_LoDs.sort()
+        fileResult["gml_lod"] = ", ".join(all_LoDs)
 
-    all_LoDs = []
-    buildingPart_counter = 0
-    for building in dataset.get_building_list():
-        if building.lod not in all_LoDs:
-            all_LoDs.append(building.lod)
-        if building.has_building_parts():
-            for buildingPart in building.building_parts:
-                buildingPart_counter -= -1
-                if buildingPart.lod not in all_LoDs:
-                    all_LoDs.append(buildingPart.lod)
-    all_LoDs.sort()
-    result["gml_lod"] = ", ".join(all_LoDs)
+        fileResult["ade"] = ", ".join(singleFile.ades)
+        numOfBuilding = len(singleFile.building_ids)
+        fileResult["number_of_cityobject_members"] = (
+            numOfBuilding + singleFile.num_notLoaded_CityObjectMembers
+        )
+        fileResult["number_of_buildings"] = numOfBuilding
+        fileResult["number_of_buildingParts"] = buildingPart_counter
+        fullResult[singleFile.filepath] = fileResult
 
-    result["ade"] = ", ".join(dataset._files[0].ades)
-    numOfBuilding = dataset.size()
-    result["number_of_cityobject_members"] = numOfBuilding + len(
-        dataset.otherCityObjectMembers
-    )
-    result["number_of_buildings"] = numOfBuilding
-    result["number_of_buildingParts"] = buildingPart_counter
-
-    return result
+    return fileResult
 
 
 def search_dataset(

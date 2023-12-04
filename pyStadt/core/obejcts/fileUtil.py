@@ -6,6 +6,7 @@ class CityFile:
         filepath: str,
         cityGMLversion: str,
         building_ids: list,
+        num_notLoaded_CityObjectMembers: int,
         ades: list,
         srsName: str = None,
         gmlName: str = None,
@@ -21,6 +22,8 @@ class CityFile:
             CityGML version as string
         building_ids : list
             list of all building ids in given file
+        num_notLoaded_CityObjectMembers : int
+            number of not loaded CityObjectMembers in given file
         ades : list
             list of recognized ADEs
         srsName : str, optional
@@ -35,6 +38,7 @@ class CityFile:
         self.filepath = filepath
         self.cityGMLversion = cityGMLversion
         self.building_ids = building_ids
+        self.num_notLoaded_CityObjectMembers = num_notLoaded_CityObjectMembers
         self.ades = ades
         self.srsName = srsName
         self.gmlName = gmlName
