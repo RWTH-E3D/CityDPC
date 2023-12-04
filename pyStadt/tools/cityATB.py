@@ -197,13 +197,13 @@ def check_building_for_address(
         returns True if all conditions are met for the building or
         at least one buildingPart
     """
-    if building.address is not None:
+    if not building.address.address_is_empty():
         res = building.address.check_address(addressRestriciton)
         if res:
             return True
 
     for buildingPart in building.get_building_parts():
-        if buildingPart.address is not None:
+        if not buildingPart.address.address_is_empty():
             res = buildingPart.address.check_address(addressRestriciton)
             if res:
                 return True

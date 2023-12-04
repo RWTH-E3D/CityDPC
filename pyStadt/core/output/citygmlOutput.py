@@ -377,7 +377,7 @@ def _add_terrainIntersection_to_xml_building(
 def _add_address_to_xml_building(
     building: Building, parent_E: ET.Element, nClass: citygmlClasses.CGML0
 ) -> None:
-    """_summary_
+    """add address to an xml element (parent_E)
 
     Parameters
     ----------
@@ -389,7 +389,7 @@ def _add_address_to_xml_building(
         namespace class
     """
 
-    if building.address is not None:
+    if not building.address.address_is_empty():
         bldgAddress_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, "address"))
         address_E = ET.SubElement(bldgAddress_E, "Address")
         if building.address.gml_id is not None:
