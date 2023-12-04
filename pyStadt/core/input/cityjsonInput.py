@@ -85,7 +85,10 @@ def load_buildings_from_json_file(
 
         if "title" in data["metadata"].keys():
             newCityFile.gmlName = data["metadata"]["title"]
+        if "identifier" in data["metadata"].keys():
+            newCityFile.identifier = data["metadata"]["identifier"]
         if "referenceSystem" in data["metadata"].keys():
+            newCityFile.srsName = data["metadata"]["referenceSystem"]
             if dataset.srsName is None:
                 dataset.srsName = data["metadata"]["referenceSystem"].split("/crs/")[-1]
             elif (
@@ -160,6 +163,9 @@ def load_buildings_from_json_file(
             buildingIDs.append(id)
 
     newCityFile.building_ids = buildingIDs
+    newCityFile.num_notLoaded_CityObjectMembers = len(data["CityObjects"]) - len(
+        buildingIDs
+    )
     dataset._files.append(newCityFile)
     logger.info(f"finished loading buildings from CityJSON file {filepath}")
 
