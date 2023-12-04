@@ -13,10 +13,7 @@ from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
 from pyStadt.core.obejcts.surfacegml import SurfaceGML
 from pyStadt.core.obejcts.fileUtil import CityFile
-from pyStadt.tools.cityATB import (
-    _border_check,
-    check_building_for_border_and_address
-)
+from pyStadt.tools.cityATB import _border_check, check_building_for_border_and_address
 from pyStadt.logger import logger
 
 
@@ -114,7 +111,6 @@ def load_buildings_from_json_file(
         )
 
     buildingIDs = []
-    buildingPartsToAssign = []
 
     for id, value in data["CityObjects"].items():
         if value["type"] == "Building":
@@ -125,46 +121,34 @@ def load_buildings_from_json_file(
                     f"invalid CityJSON file ({filepath}) - duplicate gml_id ({id})"
                 )
                 continue
-            dataset.buildings[id] = newBuilding
-            buildingIDs.append(id)
 
-        elif value["type"] == "BuildingPart":
-            newBuildingPart = BuildingPart(id)
-            _load_building_information_from_json(newBuildingPart, value, vertices)
+            if "children" in value.keys():
+                for child in value["children"]:
+                    if child in data["CityObjects"].keys():
+                        if data["CityObjects"][child]["type"] == "BuildingPart":
+                            newBuildingPart = BuildingPart(child, newBuilding.gml_id)
+                            _load_building_information_from_json(
+                                newBuildingPart, data["CityObjects"][child], vertices
+                            )
+                            newBuilding.building_parts.append(newBuildingPart)
+                        else:
+                            logger.warning(
+                                f"invalid CityJSON file ({filepath}) - child ({child}) "
+                                + f"building ({id}) is not a BuildingPart"
+                            )
+                    else:
+                        logger.warning(
+                            f"invalid CityJSON file ({filepath}) - child ({child}) of "
+                            + f"building ({id}) does not exist"
+                        )
 
-            if "parents" in value.keys():
-                newBuildingPart.parent_gml_id = value["parents"][0]
-            else:
-                logger.warning(
-                    f"invalid CityJSON file ({filepath}) - BuildingPart without "
-                    + "parent id"
-                )
-                continue
-
-            if newBuildingPart.parent_gml_id in dataset.buildings.keys():
-                dataset.buildings[newBuildingPart.parent_gml_id].building_parts.append(
-                    newBuildingPart
-                )
-            else:
-                buildingPartsToAssign.append(newBuildingPart)
-
-    for buildingPart in buildingPartsToAssign:
-        if buildingPart.parent_gml_id in dataset.buildings.keys():
-            dataset.buildings[buildingPart.parent_gml_id].building_parts.append(
-                buildingPart
-            )
-        else:
-            logger.warning(
-                f"invalid CityJSON file ({filepath}) - BuildingPart without parent"
-            )
-
-    if border is not None or addressRestriciton is not None:
-        for buildingID in buildingIDs:
-            building = dataset.buildings[buildingID]
             if not check_building_for_border_and_address(
-                building, borderCoordinates, addressRestriciton, border
+                newBuilding, borderCoordinates, addressRestriciton, border
             ):
                 continue
+
+            dataset.buildings[id] = newBuilding
+            buildingIDs.append(id)
 
     newCityFile.building_ids = buildingIDs
     dataset._files.append(newCityFile)
