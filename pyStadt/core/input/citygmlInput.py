@@ -369,9 +369,11 @@ def _get_building_surfaces_from_xml_element(
         grounds = {}
         if lod0FootPrint_E is not None:
             poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            if "{http://www.opengis.net/gml}id" in lod0FootPrint_E.attrib.keys():
+                ground_id = lod0FootPrint_E.attrib["{http://www.opengis.net/gml}id"]
+            else:
+                ground_id = "poly_0"
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            ground_id = poly_id if poly_id else "poly_0"
             newSurface = SurfaceGML(coordinates, ground_id, "LoD0_footPrint", None)
             if newSurface.isSurface:
                 grounds = {ground_id: newSurface}
@@ -381,9 +383,11 @@ def _get_building_surfaces_from_xml_element(
         roofs = {}
         if lod0RoofEdge_E is not None:
             poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            if "{http://www.opengis.net/gml}id" in lod0RoofEdge_E.attrib.keys():
+                roof_id = lod0RoofEdge_E.attrib["{http://www.opengis.net/gml}id"]
+            else:
+                roof_id = "poly_0"
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            roof_id = poly_id if poly_id else "poly_0"
             newSurface = SurfaceGML(coordinates, roof_id, "LoD0_roofEdge", None)
             if newSurface.isSurface:
                 roofs = {roof_id: newSurface}
@@ -404,9 +408,12 @@ def _get_building_surfaces_from_xml_element(
         poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
         all_poylgons = {}
         for i, poly_E in enumerate(poly_Es):
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            if "{http://www.opengis.net/gml}id" in poly_E.attrib.keys():
+                poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            else:
+                poly_id = f"poly_{i}"
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            all_poylgons[poly_id if poly_id else f"poly_{i}"] = coordinates
+            all_poylgons[poly_id] = coordinates
 
         # search for polygon with lowest and highest average height
         # lowest average height is ground surface
@@ -550,7 +557,7 @@ def _get_surface_dict_from_element(
     result = {}
     if not id_str:
         id_str = (
-            element.attrib["{http://www.opengis.net/gml}id"]
+            building.gml_id
             + "_"
             + target_str.split(":")[-1]
         )
@@ -560,7 +567,10 @@ def _get_surface_dict_from_element(
         else:
             id = None
         poly_E = surface_E.find(".//gml:Polygon", nsmap)
-        poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+        if "{http://www.opengis.net/gml}id" in poly_E.attrib:
+            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+        else:
+            poly_id = None
         coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
         used_id = id if id else f"{id_str}_{i}"
         newSurface = SurfaceGML(
