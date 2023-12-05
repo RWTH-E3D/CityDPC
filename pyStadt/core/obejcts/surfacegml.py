@@ -53,7 +53,7 @@ class SurfaceGML(object):
             if element in useless_points:
                 split_surface.remove(element)
         self.gml_surface = list(chain(*split_surface))
-        if len(self.gml_surface) < 9:
+        if len(self.gml_surface) < 12:
             self.isSurface = False
             logger.error(
                 f"WARNING! The surface {surface_id} - {polygon_id} has to few "
