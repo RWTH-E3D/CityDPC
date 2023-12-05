@@ -157,7 +157,7 @@ def load_buildings_from_xml_file(
     if gmlName_E is not None:
         gmlName = gmlName_E.text
 
-    notLoadedCityObjectMembers = cityObjectMembers_in_file - len(building_ids)
+    notLoadedCityObjectMembers = len(cityObjectMembers_in_file) - len(building_ids)
 
     # store file related information
     newCFile = CityFile(
@@ -424,8 +424,9 @@ def _get_building_surfaces_from_xml_element(
         roof_id = None
         roof_average_height = None
 
-        for poly_id, polygon in all_poylgons.itmes():
-            polygon_average_height = sum([i[2] for i in polygon]) / len(polygon)
+        for poly_id, polygon in all_poylgons.items():
+            twoD_array = np.reshape(polygon, (-1, 3))
+            polygon_average_height = sum([i[2] for i in twoD_array]) / len(twoD_array)
 
             if ground_id is None:
                 ground_id = poly_id
@@ -556,11 +557,7 @@ def _get_surface_dict_from_element(
     """
     result = {}
     if not id_str:
-        id_str = (
-            building.gml_id
-            + "_"
-            + target_str.split(":")[-1]
-        )
+        id_str = building.gml_id + "_" + target_str.split(":")[-1]
     for i, surface_E in enumerate(element.findall(target_str, nsmap)):
         if "{http://www.opengis.net/gml}id" in surface_E.attrib:
             id = surface_E.attrib["{http://www.opengis.net/gml}id"]
@@ -602,7 +599,11 @@ def _get_text_of_xml_element(
     str | None
         returns either the value as a string or None
     """
-    res_E = element.find(target, nsmap)
+    try:
+        res_E = element.find(target, nsmap)
+    except:
+        logger.error(f"Unable to find {target} in {element}")
+        return None
     if res_E is not None:
         return res_E.text
     return None
@@ -629,7 +630,11 @@ def _get_attrib_of_xml_element(
     str | None
         returns either the attribute value as a string or None
     """
-    res_E = element.find(target, nsmap)
+    try:
+        res_E = element.find(target, nsmap)
+    except:
+        logger.error(f"Unable to find {target} in {element}")
+        return None
     if res_E is not None:
         if attrib in res_E.attrib.keys():
             return res_E.attrib[attrib]
