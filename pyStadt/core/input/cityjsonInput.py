@@ -134,8 +134,13 @@ def load_buildings_from_json_file(
                 )
                 continue
 
-            if "children" in value.keys():
-                for child in value["children"]:
+            if newCityFile.version.split("v")[1] == "1.0":
+                bp_key = "members"
+            else:
+                bp_key = "children"
+
+            if bp_key in value.keys():
+                for child in value[bp_key]:
                     if child in data["CityObjects"].keys():
                         if data["CityObjects"][child]["type"] == "BuildingPart":
                             newBuildingPart = BuildingPart(child, newBuilding.gml_id)
