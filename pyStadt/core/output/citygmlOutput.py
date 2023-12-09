@@ -82,8 +82,7 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0"):
         for buildingPart in building.building_parts:
             cOBP_E = ET.SubElement(
                 building_E,
-                ET.QName(nClass.bldg, "Building"),
-                attrib={ET.QName(nClass.gml, "id"): building.gml_id},
+                ET.QName(nClass.bldg, "consistsOfBuildingPart"),
             )
 
             bp_E = _add_building_to_cityModel_xml(dataset, buildingPart, cOBP_E, nClass)
