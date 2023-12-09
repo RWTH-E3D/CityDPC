@@ -658,6 +658,6 @@ def _warn_invalid_surface(building: AbstractBuilding, surfaceID: str) -> None:
         )
     else:
         logger.warning(
-            f"Surface {surfaceID} of Building {building.parent_gml_id} is not a "
+            f"Surface {surfaceID} of Building {building} is not a "
             + "valid surface"
         )
