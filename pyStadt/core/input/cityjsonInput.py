@@ -24,6 +24,7 @@ def load_buildings_from_json_file(
     addressRestriciton: dict = None,
     ignoreRefSytem: bool = False,
     dontTransform: bool = False,
+    ignoreExistingTransform: bool = False,
 ):
     """adds buldings from filepath to dataset
 
@@ -42,6 +43,9 @@ def load_buildings_from_json_file(
         ignore reference system errors, by default False
     dontTransform : bool, optional
         if True, vertices are not transformed to global coordinates, by default False
+    ignoreExistingTransform : bool, optional
+        flag to ignore comparission between transform object in new file and dataset,
+        by default False
     """
     logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
@@ -121,6 +125,17 @@ def load_buildings_from_json_file(
                 vertex[2] * data["transform"]["scale"][2]
                 + data["transform"]["translate"][2]
             )
+    else:
+        if dataset.transform != {}:
+            if dataset.transform != data["transform"]:
+                if not ignoreExistingTransform:
+                    logger.error(
+                        "Trying to add file with differenet transform object than "
+                        + "dataset. Either transform or forceIgnore the transformation"
+                    )
+                    return
+        else:
+            dataset.transform = data["transform"]
 
     buildingIDs = []
 

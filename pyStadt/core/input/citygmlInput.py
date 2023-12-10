@@ -25,6 +25,8 @@ def load_buildings_from_xml_file(
     filepath: str,
     borderCoordinates: list = None,
     addressRestriciton: dict = None,
+    ignoreRefSystem: bool = False,
+    ignoreExistingTransform: bool = False,
 ):
     """adds buildings from filepath to the dataset
 
@@ -37,6 +39,12 @@ def load_buildings_from_xml_file(
         by default None
     addressRestriciton : dict, optional
         dictionary of address values to restrict the dataset, by default None
+    ignoreRefSystem : bool, optional
+        flag to ignore comparission between reference system name in new file and
+        dataset, by default False
+    ignoreExistingTransform : bool, optional
+        flag to ignore comparission between transform object in new file and dataset,
+        by default False
     """
     logger.info(f"loading buildings from CityGML file {filepath}")
     parser = ET.XMLParser(remove_blank_text=True)
@@ -65,11 +73,25 @@ def load_buildings_from_xml_file(
             dataset.srsName = fileSRSName
         elif dataset.srsName == fileSRSName:
             pass
+        elif ignoreRefSystem:
+            logger.info(
+                f"ReferenceSystem missmatch ({dataset.srsName} - {fileSRSName}), but "
+                + "ignoring."
+            )
         else:
             logger.error(
                 f"Unable to load file! Given srsName ({fileSRSName}) does not match "
                 + f"Dataset srsName ({dataset.srsName})"
             )
+        if dataset.transform != {} and dataset.transform != {
+            "scale": [1, 1, 1],
+            "translate": [0, 0, 0],
+        }:
+            if not ignoreExistingTransform:
+                logger.error(
+                    "Trying to add file with differenet transform object than "
+                    + "dataset. Either transform or forceIgnore the transformation"
+                )
     else:
         logger.error(
             "Unable to load file! Can't find gml:Envelope for srsName defenition"
@@ -155,6 +177,8 @@ def load_buildings_from_xml_file(
     if upperCorner:
         newCFile.upperCorner = (float(upperCorner[0]), float(upperCorner[1]))
     dataset._files.append(newCFile)
+    if dataset.transform == {}:
+        dataset.transform = {"scale": [1, 1, 1], "translate": [0, 0, 0]}
     logger.info(f"finished loading buildings from CityGML file {filepath}")
 
 

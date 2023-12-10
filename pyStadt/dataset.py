@@ -23,6 +23,7 @@ class Dataset:
 
         self._minimum = [math.inf, math.inf, math.inf]
         self._maximum = [-math.inf, -math.inf, -math.inf]
+        self.transform = {}
 
     def size(self) -> int:
         """return the number of buildings within the dataset
