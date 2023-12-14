@@ -69,6 +69,10 @@ class SurfaceGML(object):
         self.surface_orientation = self.get_gml_orientation()
         self.surface_tilt = self.get_gml_tilt()
 
+        if self.surface_type is None:
+            # infer surface type by tilt angle
+            pass
+
     def get_gml_area(self):
         """calc the area of a gml_surface defined by gml coordinates
 

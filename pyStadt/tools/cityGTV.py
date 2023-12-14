@@ -118,31 +118,25 @@ def _transform_abstractBuilding(
     eleChange : float
         relative elevation change
     """
-    pivot = _get_surface_min_max_avg(list(building.roofs.values())[0])
+    pivot = _get_surface_min_max_avg(building.get_surfaces(["RoofSurface"])[0])
     resX, resY = transform(inProj, outProj, pivot[0], pivot[1])
     pivot = [resX + offset[0], resY + offset[1]]
 
-    for surfaceDict in [
-        building.roofs,
-        building.grounds,
-        building.walls,
-        building.closure,
-    ]:
-        for surface in surfaceDict.values():
-            # update gml surface element
-            surface.gml_surface = _transform_posList(
-                surface.gml_surface,
-                inProj,
-                outProj,
-                pivot,
-                offset,
-                rotAngle,
-                eleChange,
-            )
-            surface.gml_surface_2array = np.reshape(surface.gml_surface, (-1, 3))
-            surface.get_gml_area()
-            surface.get_gml_orientation()
-            surface.get_gml_tilt()
+    for surface in building.get_surfaces():
+        # update gml surface element
+        surface.gml_surface = _transform_posList(
+            surface.gml_surface,
+            inProj,
+            outProj,
+            pivot,
+            offset,
+            rotAngle,
+            eleChange,
+        )
+        surface.gml_surface_2array = np.reshape(surface.gml_surface, (-1, 3))
+        surface.get_gml_area()
+        surface.get_gml_orientation()
+        surface.get_gml_tilt()
 
     # delete terrainIntersection
     building.terrainIntersections = None
@@ -259,14 +253,8 @@ def _validate_abstractBuilding(building: AbstractBuilding) -> dict:
     """
 
     valResult = {}
-    for surfaceDict in [
-        building.roofs,
-        building.grounds,
-        building.walls,
-        building.closure,
-    ]:
-        for id, surface in surfaceDict.items():
-            valResult[id] = _validate_polygon(surface)
+    for surface in building.get_surfaces():
+        valResult[surface.surface_id] = _validate_polygon(surface)
     return valResult
 
 
