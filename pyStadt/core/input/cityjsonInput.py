@@ -13,6 +13,7 @@ from pyStadt.core.obejcts.building import Building
 from pyStadt.core.obejcts.buildingPart import BuildingPart
 from pyStadt.core.obejcts.surfacegml import SurfaceGML
 from pyStadt.core.obejcts.fileUtil import CityFile
+from pyStadt.core.obejcts.geometry import GeometryGML
 from pyStadt.tools.cityATB import _border_check, check_building_for_border_and_address
 from pyStadt.logger import logger
 
@@ -72,7 +73,7 @@ def load_buildings_from_json_file(
         return
 
     border = None
-    newCityFile = CityFile(filepath, f"CityJSONv{data['version']}", [], [])
+    newCityFile = CityFile(filepath, f"CityJSONv{data['version']}", [], [], [])
     if "metadata" in data.keys():
         if "geographicalExtent" in data["metadata"].keys():
             newCityFile.lowerCorner = data["metadata"]["geographicalExtent"][0:3]
@@ -149,7 +150,7 @@ def load_buildings_from_json_file(
                 )
                 continue
 
-            if newCityFile.version.split("v")[1] == "1.0":
+            if newCityFile.cityGMLversion.split("v")[1] == "1.0":
                 bp_key = "members"
             else:
                 bp_key = "children"
@@ -236,34 +237,57 @@ def _load_building_information_from_json(
 
     if "geometry" in jsonDict.keys() and jsonDict["geometry"] != []:
         for geometry in jsonDict["geometry"]:
+            geomKey = building.add_geoemtry(
+                GeometryGML(
+                    geometry["type"],
+                    building.gml_id,
+                    int(geometry["lod"].split(".")[0]),
+                )
+            )
+            if building.lod is None:
+                building.lod = building.geometries[geomKey].lod
+
             if "semantics" not in geometry.keys():
                 logger.warning(f"no semantics in {building.gml_id} - skipping geometry")
                 continue
 
-            building.lod = geometry["lod"].split(".")[0]
-
             if geometry["type"] == "Solid":
+                geom = building.get_geometry(geomKey)
+                pSolidId = geom.create_pseudoSolid("pyStadt_0")
                 for i, shell in enumerate(geometry["boundaries"]):
+                    geom.pseudoSolids[pSolidId].create_pseudoShell(f"pyStadt_{i}")
                     for j, surface in enumerate(shell):
-                        _add_surface_to_building(
-                            building, vertices, surface, geometry["semantics"], [i, j]
+                        _add_cityjson_surface_to_building(
+                            building,
+                            geomKey,
+                            vertices,
+                            surface,
+                            geometry["semantics"],
+                            [i, j],
                         )
             elif (
                 geometry["type"] == "MultiSurface"
                 or geometry["type"] == "CompositeSurface"
             ):
+                geom = building.get_geometry(geomKey)
+                pSolidId = geom.create_pseudoSolid("pyStadt_0")
+                geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
                 for i, surface in enumerate(geometry["boundaries"]):
-                    _add_surface_to_building(
-                        building, vertices, surface, geometry["semantics"], [i]
+                    _add_cityjson_surface_to_building(
+                        building, geomKey, vertices, surface, geometry["semantics"], [i]
                     )
             elif (
                 geometry["type"] == "MultiSolid" or geometry["type"] == "CompositeSolid"
             ):
+                geom = building.get_geometry(geomKey)
                 for i, solid in enumerate(geometry["boundaries"]):
+                    pSolidId = geom.create_pseudoSolid(f"pyStadt_{i}")
                     for j, shell in enumerate(solid):
+                        geom.pseudoSolids[pSolidId].create_pseudoShell(f"pyStadt_{j}")
                         for k, surface in enumerate(shell):
-                            _add_surface_to_building(
+                            _add_cityjson_surface_to_building(
                                 building,
+                                geomKey,
                                 vertices,
                                 surface,
                                 geometry["semantics"],
@@ -274,12 +298,14 @@ def _load_building_information_from_json(
                     f"unsupported geometry type ({geometry['type']}) in "
                     + f"{building.gml_id}"
                 )
+        building._calc_roof_volume()
 
 
-def _add_surface_to_building(
+def _add_cityjson_surface_to_building(
     building: AbstractBuilding,
+    geomKey: str,
     vertices: list[list[float]],
-    vertexList: list[list[float]],
+    vertexIndexList: list[list[int]],
     semantics: dict,
     depthInfo: list[float],
 ) -> None:
@@ -289,17 +315,19 @@ def _add_surface_to_building(
     ----------
     building : AbstractBuilding
         either Building or BuildingPart object to add surface to
+    geomKey : str
+        geometry key to add surface to
     vertices : list[list[float]]
         list of vertices
-    coordiantes : list[list[float]]
-        list of coordinates
+    vertexIndexList : list[list[float]]
+        list of indices of vertices
     semantics : dict
         semantic dict from geometry
     depthInfo : list[float]
         list of surface indices
     """
     surfaceCoor = []
-    for vertex in vertexList[0]:
+    for vertex in vertexIndexList[0]:
         surfaceCoor.append(vertices[vertex])
     surfaceType, surfaceId = _get_semantic_surface_info(semantics, depthInfo)
     if surfaceType is None or surfaceType not in [
@@ -313,14 +341,17 @@ def _add_surface_to_building(
 
     if surfaceId is None:
         surfaceId = (
-            f"{building.gml_id}_{surfaceType}_{'_'.join([str(i) for i in depthInfo])}"
+            f"pyStadt_{building.gml_id}_{surfaceType}_"
+            + f"{'_'.join([str(i) for i in depthInfo])}"
         )
 
     if surfaceCoor[0] != surfaceCoor[-1]:
         surfaceCoor.append(surfaceCoor[0])
 
-    building.add_surface(
-        SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType)
+    building.add_surface_with_depthInfo(
+        SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType),
+        geomKey,
+        depthInfo,
     )
 
 
