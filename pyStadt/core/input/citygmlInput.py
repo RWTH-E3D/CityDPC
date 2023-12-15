@@ -342,10 +342,12 @@ def _get_building_surfaces_from_xml_element(
                 GeometryGML("MultiSurface", building.gml_id, 0)
             )
             poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            poly_id = _get_attrib_of_xml_element(
+                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+            )
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            ground_id = poly_id if poly_id else "poly_0"
-            newSurface = SurfaceGML(coordinates, ground_id, "LoD0_footPrint", None)
+            ground_id = poly_id if poly_id else "pyStadt_poly_0"
+            newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
             if newSurface.isSurface:
                 geom = building.get_geometry(geomKey)
                 pSolidId = geom.create_pseudoSolid("pyStadt_0")
@@ -360,10 +362,12 @@ def _get_building_surfaces_from_xml_element(
                 GeometryGML("MultiSurface", building.gml_id, 0)
             )
             poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            poly_id = _get_attrib_of_xml_element(
+                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+            )
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            roof_id = poly_id if poly_id else "poly_0"
-            newSurface = SurfaceGML(coordinates, roof_id, "LoD0_roofEdge", None)
+            roof_id = poly_id if poly_id else "pyStadt_poly_0"
+            newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
             if newSurface.isSurface:
                 geom = building.get_geometry(geomKey)
                 pSolidId = geom.create_pseudoSolid("pyStadt_0")
@@ -388,9 +392,11 @@ def _get_building_surfaces_from_xml_element(
         poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
         all_poylgons = {}
         for i, poly_E in enumerate(poly_Es):
-            poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+            poly_id = _get_attrib_of_xml_element(
+                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+            )
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            all_poylgons[poly_id if poly_id else f"poly_{i}"] = coordinates
+            all_poylgons[poly_id if poly_id else f"pyStadt_poly_{i}"] = coordinates
 
         # search for polygon with lowest and highest average height
         # lowest average height is ground surface
@@ -401,7 +407,7 @@ def _get_building_surfaces_from_xml_element(
         roof_id = None
         roof_average_height = None
 
-        for poly_id, polygon in all_poylgons.itmes():
+        for poly_id, polygon in all_poylgons.items():
             polygon_average_height = sum([i[2] for i in polygon]) / len(polygon)
 
             if ground_id is None:
@@ -553,7 +559,9 @@ def _add_surface_from_element(
             surface_E, nsmap, ".", "{http://www.opengis.net/gml}id"
         )
         poly_E = surface_E.find(".//gml:Polygon", nsmap)
-        poly_id = poly_E.attrib["{http://www.opengis.net/gml}id"]
+        poly_id = _get_attrib_of_xml_element(
+            poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+        )
         coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
         used_id = id if id else f"pyStadt_{id_str}_{i}"
         newSurface = SurfaceGML(
