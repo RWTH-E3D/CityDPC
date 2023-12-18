@@ -356,7 +356,7 @@ def _get_building_surfaces_from_xml_element(
                 building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
             else:
                 building.remove_geometry(geomKey)
-                _warn_invalid_surface(building, ground_id)
+                building._warn_invalid_surface(ground_id)
 
         if lod0RoofEdge_E is not None:
             geomKey = building.add_geoemtry(
@@ -376,7 +376,7 @@ def _get_building_surfaces_from_xml_element(
                 building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
             else:
                 building.remove_geometry(geomKey)
-                _warn_invalid_surface(building, roof_id)
+                building._warn_invalid_surface(roof_id)
 
         return
 
@@ -428,7 +428,7 @@ def _get_building_surfaces_from_xml_element(
         if newSurface.isSurface:
             building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
         else:
-            _warn_invalid_surface(building, roof_id)
+            building._warn_invalid_surface(roof_id)
         del all_poylgons[roof_id]
         newSurface = SurfaceGML(
             all_poylgons[ground_id], ground_id, "GroundSurface", None
@@ -436,7 +436,7 @@ def _get_building_surfaces_from_xml_element(
         if newSurface.isSurface:
             building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
         else:
-            _warn_invalid_surface(building, ground_id)
+            building._warn_invalid_surface(ground_id)
         del all_poylgons[ground_id]
 
         for wall_id, coordinates in all_poylgons.items():
@@ -444,7 +444,7 @@ def _get_building_surfaces_from_xml_element(
             if newSurface.isSurface:
                 building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
             else:
-                _warn_invalid_surface(building, wall_id)
+                building._warn_invalid_surface(wall_id)
 
         return
 
@@ -571,7 +571,7 @@ def _add_surface_from_element(
         if newSurface.isSurface:
             building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
         else:
-            _warn_invalid_surface(building, used_id)
+            building._warn_invalid_surface(used_id)
 
 
 def _get_text_of_xml_element(
@@ -633,25 +633,3 @@ def _get_attrib_of_xml_element(
         if attrib in res_E.attrib.keys():
             return res_E.attrib[attrib]
     return None
-
-
-def _warn_invalid_surface(building: AbstractBuilding, surfaceID: str) -> None:
-    """logs warning about invalid surface
-
-    Parameters
-    ----------
-    building : AbstractBuilding
-        either Building or BuildingPart parent object of Surface
-    surfaceID : str
-        gml:id of incorrect Surface
-    """
-    if building.is_building_part:
-        logger.warning(
-            f"Surface {surfaceID} of BuildingPart {building.gml_id} of Building "
-            + f"{building.parent_gml_id} is not a valid surface"
-        )
-    else:
-        logger.warning(
-            f"Surface {surfaceID} of Building {building} is not a "
-            + "valid surface"
-        )

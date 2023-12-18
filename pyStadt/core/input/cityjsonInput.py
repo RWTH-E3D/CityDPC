@@ -349,11 +349,12 @@ def _add_cityjson_surface_to_building(
     if surfaceCoor[0] != surfaceCoor[-1]:
         surfaceCoor.append(surfaceCoor[0])
 
-    building.add_surface_with_depthInfo(
-        SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType),
-        geomKey,
-        depthInfo,
-    )
+    newSurface = SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType)
+    if newSurface.is_surface:
+        building.add_surface(newSurface, geomKey, depthInfo)
+    else:
+        building._warn_invalid_surface(surfaceId)
+        return
 
 
 def _get_semantic_surface_info(

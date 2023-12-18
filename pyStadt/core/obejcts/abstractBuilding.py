@@ -245,6 +245,24 @@ class AbstractBuilding:
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
 
+    def _warn_invalid_surface(self, surfaceID: str) -> None:
+        """logs warning about invalid surface
+
+        Parameters
+        ----------
+        surfaceID : str
+            gml:id of incorrect Surface
+        """
+        if self.is_building_part:
+            logger.warning(
+                f"Surface {surfaceID} of BuildingPart {self.gml_id} of Building "
+                + f"{self.parent_gml_id} is not a valid surface"
+            )
+        else:
+            logger.warning(
+                f"Surface {surfaceID} of Building {self} is not a valid surface"
+            )
+
     def create_legacy_surface_dicts(self) -> None:
         """creates the legacy surface dictionaries"""
         dictNames = {
