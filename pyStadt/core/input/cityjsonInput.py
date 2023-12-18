@@ -299,6 +299,7 @@ def _load_building_information_from_json(
                     + f"{building.gml_id}"
                 )
         building._calc_roof_volume()
+        building.create_legacy_surface_dicts()
 
 
 def _add_cityjson_surface_to_building(

@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyStadt.core.obejcts.building import Building
 
+from pyStadt.logger import logger
+
 import math
 
 
@@ -24,6 +26,11 @@ class Dataset:
         self._minimum = [math.inf, math.inf, math.inf]
         self._maximum = [-math.inf, -math.inf, -math.inf]
         self.transform = {}
+
+        logger.warning("The dictionaries 'walls', 'roofs', 'grounds' and 'closures' "
+                       + "buildings and buildingParts will be deprecated. Use "
+                       + "'get_surfaces' instead. "
+                       + "(e.g. get_surfaces(surfaceTypes=['WallSurface']))")
 
     def size(self) -> int:
         """return the number of buildings within the dataset

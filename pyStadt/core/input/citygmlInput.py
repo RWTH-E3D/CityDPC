@@ -267,6 +267,7 @@ def _load_building_information_from_xml(
             )
 
     building._calc_roof_volume()
+    building.create_legacy_surface_dicts()
 
     address_E = buildingElement.find("bldg:address/core:Address", nsmap)
     if address_E is not None:

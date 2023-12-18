@@ -26,6 +26,10 @@ class AbstractBuilding:
         """
         self.gml_id = id
         self.geometries = {}
+        self.walls = {}
+        self.roofs = {}
+        self.grounds = {}
+        self.closures = {}
         self.roof_volume = None
         self.lod = None
         self.is_building_part = None
@@ -240,3 +244,18 @@ class AbstractBuilding:
                 )
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
+
+    def create_legacy_surface_dicts(self) -> None:
+        """creates the legacy surface dictionaries"""
+        dictNames = {
+            "walls": "WallSurface",
+            "roofs": "RoofSurface",
+            "grounds": "GroundSurface",
+            "closures": "ClosureSurface",
+        }
+        for dictName, surfaceType in dictNames.items():
+            surfaces = self.get_surfaces([surfaceType])
+            if surfaces != []:
+                setattr(self, dictName, {})
+                for surface in surfaces:
+                    getattr(self, dictName)[surface.id] = surface
