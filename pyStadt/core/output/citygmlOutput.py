@@ -241,7 +241,7 @@ def _add_lod_0_geometry_to_xml_building(
     nClass : citygmlClasses.CGML0
         namespace class
     """
-    for groundSurface in geometry.get_surfaces_with_indices(0, 0, ["GroundSurface"]):
+    for groundSurface in geometry.get_surfaces(["GroundSurface"]):
         lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.bldg, "lod0FootPrint"))
         multiSurface_E = ET.SubElement(
             lodnSolid_E, ET.QName(nClass.gml, "MultiSurface")
@@ -261,7 +261,7 @@ def _add_lod_0_geometry_to_xml_building(
         posList_E.text = __untransform_surface_to_str(groundSurface, dataset.transform)
         update_min_max(dataset, groundSurface)
 
-    for roofSurface in geometry.get_surfaces_with_indices(0, 0, ["RoofSurface"]):
+    for roofSurface in geometry.get_surfaces(["RoofSurface"]):
         lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.bldg, "lod0RoofEdge"))
         multiSurface_E = ET.SubElement(
             lodnSolid_E, ET.QName(nClass.gml, "MultiSurface")
@@ -308,7 +308,7 @@ def _add_lod_1_geometry_to_xml_building(
         exterior_E, ET.QName(nClass.gml, "CompositeSurface")
     )
 
-    for surface in geometry.get_surfaces_with_indices(0, 0):
+    for surface in geometry.get_surfaces():
         surfaceMember_E = ET.SubElement(
             compositeSurface_E, ET.QName(nClass.gml, "surfaceMember")
         )
@@ -352,7 +352,7 @@ def _add_lod_2_geometry_to_xml_building(
             exterior_E, ET.QName(nClass.gml, "CompositeSurface")
         )
 
-    for surface in geometry.get_surfaces_with_indices(0, 0):
+    for surface in geometry.get_surfaces():
         href_id = f"#{surface.polygon_id}"
         ET.SubElement(
             compositeSurface_E,

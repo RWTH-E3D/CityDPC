@@ -77,7 +77,7 @@ class AbstractBuilding:
                 return True
         return False
 
-    def add_geoemtry(self, geometry: GeometryGML, geomKey: str = None) -> str:
+    def add_geometry(self, geometry: GeometryGML, geomKey: str = None) -> str:
         """add a geometry to the building
 
         Parameters
@@ -136,37 +136,10 @@ class AbstractBuilding:
         if geomKey in self.geometries.keys():
             del self.geometries[geomKey]
 
-    def add_surface_with_depthInfo(
-        self,
-        surface: SurfaceGML,
-        geometryKey: str,
-        depthInfo: list[int],
-    ) -> None:
-        """add a surface to the building
-
-        Parameters
-        ----------
-        surface : SurfaceGML
-            surface to add
-        geometryKey : str
-            geometry key to add the surface to
-        depthInfo : list[int]
-            list of depth information for the surface
-        """
-        if geometryKey not in self.geometries.keys():
-            logger.error(
-                f"Building {self.gml_id} has no geometry '{geometryKey}, "
-                + "cannot add surface"
-            )
-            return
-        self.geometries[geometryKey].add_surface_with_depthInfo(surface, depthInfo)
-
     def get_surfaces(
         self,
         surfaceTypes: list[str] = [],
         geometryKeys: list[str] = [],
-        pSolidKeys: list[str] = [],
-        pShellKeys: list[str] = [],
     ) -> list[SurfaceGML]:
         """returns a list of all surfaces of the geometry matching the given constraints
 
@@ -176,10 +149,6 @@ class AbstractBuilding:
             list of surface type strings, by default []
         geometryKeys : list[str], optional
             list of geometry keys, by default []
-        pSolidKeys : list[str], optional
-            list of pseudo solid keys, by default []
-        pShellKeys : list[str], optional
-            list of pseudo shell keys, by default []
 
         Returns
         -------
@@ -190,15 +159,9 @@ class AbstractBuilding:
         for key, geometry in self.geometries.items():
             if geometryKeys != [] and key not in geometryKeys:
                 continue
-            for pseudoSolid in geometry.pseudoSolids:
-                if pSolidKeys != [] and pseudoSolid.id not in pSolidKeys:
-                    continue
-                for pseudoShell in pseudoSolid.pseudoShells:
-                    if pShellKeys != [] and pseudoShell.id not in pShellKeys:
-                        continue
-                    for surface in pseudoShell.surfaces:
-                        if surfaceTypes == [] or surface.surface_type in surfaceTypes:
-                            surfaces.append(surface)
+            for surface in geometry.surfaces:
+                if surfaceTypes == [] or surface.surface_type in surfaceTypes:
+                    surfaces.append(surface)
 
         return surfaces
 
@@ -276,4 +239,4 @@ class AbstractBuilding:
             if surfaces != []:
                 setattr(self, dictName, {})
                 for surface in surfaces:
-                    getattr(self, dictName)[surface.id] = surface
+                    getattr(self, dictName)[surface.surface_id] = surface

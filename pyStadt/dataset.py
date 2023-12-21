@@ -27,10 +27,12 @@ class Dataset:
         self._maximum = [-math.inf, -math.inf, -math.inf]
         self.transform = {}
 
-        logger.warning("The dictionaries 'walls', 'roofs', 'grounds' and 'closures' "
-                       + "buildings and buildingParts will be deprecated. Use "
-                       + "'get_surfaces' instead. "
-                       + "(e.g. get_surfaces(surfaceTypes=['WallSurface']))")
+        logger.warning(
+            "The dictionaries 'walls', 'roofs', 'grounds' and 'closures' "
+            + "buildings and buildingParts will be deprecated. Use "
+            + "'get_surfaces' instead. "
+            + "(e.g. get_surfaces(surfaceTypes=['WallSurface']))"
+        )
 
     def size(self) -> int:
         """return the number of buildings within the dataset

@@ -237,13 +237,10 @@ def _load_building_information_from_json(
 
     if "geometry" in jsonDict.keys() and jsonDict["geometry"] != []:
         for geometry in jsonDict["geometry"]:
-            geomKey = building.add_geoemtry(
-                GeometryGML(
-                    geometry["type"],
-                    building.gml_id,
-                    int(geometry["lod"].split(".")[0]),
-                )
+            geometryObj = GeometryGML(
+                geometry["type"], building.gml_id, int(geometry["lod"].split(".")[0])
             )
+            geomKey = building.add_geometry(geometryObj)
             if building.lod is None:
                 building.lod = building.geometries[geomKey].lod
 
@@ -252,14 +249,11 @@ def _load_building_information_from_json(
                 continue
 
             if geometry["type"] == "Solid":
-                geom = building.get_geometry(geomKey)
-                pSolidId = geom.create_pseudoSolid("pyStadt_0")
                 for i, shell in enumerate(geometry["boundaries"]):
-                    geom.pseudoSolids[pSolidId].create_pseudoShell(f"pyStadt_{i}")
                     for j, surface in enumerate(shell):
                         _add_cityjson_surface_to_building(
                             building,
-                            geomKey,
+                            geometryObj,
                             vertices,
                             surface,
                             geometry["semantics"],
@@ -304,7 +298,7 @@ def _load_building_information_from_json(
 
 def _add_cityjson_surface_to_building(
     building: AbstractBuilding,
-    geomKey: str,
+    geometry: GeometryGML,
     vertices: list[list[float]],
     vertexIndexList: list[list[int]],
     semantics: dict,
@@ -316,8 +310,8 @@ def _add_cityjson_surface_to_building(
     ----------
     building : AbstractBuilding
         either Building or BuildingPart object to add surface to
-    geomKey : str
-        geometry key to add surface to
+    geometry : GeometryGML
+        geometry object to add surface to
     vertices : list[list[float]]
         list of vertices
     vertexIndexList : list[list[float]]
@@ -351,7 +345,10 @@ def _add_cityjson_surface_to_building(
 
     newSurface = SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType)
     if newSurface.is_surface:
-        building.add_surface(newSurface, geomKey, depthInfo)
+        if len(depthInfo) == 3:
+            geometry.add_surface(newSurface, str(depthInfo))
+        else:
+            geometry.add_surface(newSurface)
     else:
         building._warn_invalid_surface(surfaceId)
         return

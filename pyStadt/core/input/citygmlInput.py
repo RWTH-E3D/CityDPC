@@ -339,9 +339,8 @@ def _get_building_surfaces_from_xml_element(
     lod0RoofEdge_E = element.find("bldg:lod0RoofEdge", nsmap)
     if lod0FootPrint_E is not None or lod0RoofEdge_E is not None:
         if lod0FootPrint_E is not None:
-            geomKey = building.add_geoemtry(
-                GeometryGML("MultiSurface", building.gml_id, 0)
-            )
+            geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+            geomKey = building.add_geometry(geometry)
             poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
             poly_id = _get_attrib_of_xml_element(
                 poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
@@ -350,18 +349,14 @@ def _get_building_surfaces_from_xml_element(
             ground_id = poly_id if poly_id else "pyStadt_poly_0"
             newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
             if newSurface.isSurface:
-                geom = building.get_geometry(geomKey)
-                pSolidId = geom.create_pseudoSolid("pyStadt_0")
-                geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
-                building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
+                geometry.add_surface(newSurface)
             else:
                 building.remove_geometry(geomKey)
                 building._warn_invalid_surface(ground_id)
 
         if lod0RoofEdge_E is not None:
-            geomKey = building.add_geoemtry(
-                GeometryGML("MultiSurface", building.gml_id, 0)
-            )
+            geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+            geomKey = building.add_geometry(geometry)
             poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
             poly_id = _get_attrib_of_xml_element(
                 poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
@@ -370,11 +365,6 @@ def _get_building_surfaces_from_xml_element(
             roof_id = poly_id if poly_id else "pyStadt_poly_0"
             newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
             if newSurface.isSurface:
-                geom = building.get_geometry(geomKey)
-                pSolidId = geom.create_pseudoSolid("pyStadt_0")
-                geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
-                building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
-            else:
                 building.remove_geometry(geomKey)
                 building._warn_invalid_surface(roof_id)
 
@@ -384,10 +374,8 @@ def _get_building_surfaces_from_xml_element(
     lod1Solid_E = element.find("bldg:lod1Solid", nsmap)
     if lod1Solid_E is not None:
         # get all polygons and extract their coordinates
-        geomKey = building.add_geoemtry(GeometryGML("Solid", building.gml_id, 1))
-        geom = building.get_geometry(geomKey)
-        pSolidId = geom.create_pseudoSolid("pyStadt_0")
-        geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
+        geometry = GeometryGML("Solid", building.gml_id, 1)
+        geomKey = building.add_geometry(geometry)
 
         building.lod = "1"
         poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
@@ -426,7 +414,7 @@ def _get_building_surfaces_from_xml_element(
                 roof_average_height = polygon_average_height
         newSurface = SurfaceGML(all_poylgons[roof_id], roof_id, "RoofSurface", None)
         if newSurface.isSurface:
-            building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
+            geometry.add_surface(newSurface)
         else:
             building._warn_invalid_surface(roof_id)
         del all_poylgons[roof_id]
@@ -434,7 +422,7 @@ def _get_building_surfaces_from_xml_element(
             all_poylgons[ground_id], ground_id, "GroundSurface", None
         )
         if newSurface.isSurface:
-            building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
+            geometry.add_surface(newSurface)
         else:
             building._warn_invalid_surface(ground_id)
         del all_poylgons[ground_id]
@@ -442,7 +430,7 @@ def _get_building_surfaces_from_xml_element(
         for wall_id, coordinates in all_poylgons.items():
             newSurface = SurfaceGML(coordinates, wall_id, "LoD1_wall", None)
             if newSurface.isSurface:
-                building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
+                geometry.add_surface(newSurface)
             else:
                 building._warn_invalid_surface(wall_id)
 
@@ -450,46 +438,44 @@ def _get_building_surfaces_from_xml_element(
 
     # everything greater than LoD1
     solid_E = element.find("bldg:lod2Solid", nsmap)
+    listOfSurfaceMembers = []
     if solid_E is not None:
-        geomKey = building.add_geoemtry(GeometryGML("Solid", building.gml_id, 2))
-        listOfSurfaceMembers = []
+        geometry = GeometryGML("Solid", building.gml_id, 2)
+        geomKey = building.add_geometry(geometry)
         for sM in solid_E.findall(".//gml:surfaceMember", nsmap):
             listOfSurfaceMembers.append(sM.attrib["{http://www.w3.org/1999/xlink}href"])
         # do something with this list of solid memebers
     else:
-        geomKey = building.add_geoemtry(GeometryGML("MultiSurface", building.gml_id, 2))
-
-    geom = building.get_geometry(geomKey)
-    pSolidId = geom.create_pseudoSolid("pyStadt_0")
-    geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
+        geometry = GeometryGML("MultiSurface", building.gml_id, 2)
+        geomKey = building.add_geometry(geometry)
 
     _add_surface_from_element(
         building,
         element,
         nsmap,
         "bldg:boundedBy/bldg:WallSurface",
-        geomKey,
+        geometry,
     )
     _add_surface_from_element(
         building,
         element,
         nsmap,
         "bldg:boundedBy/bldg:RoofSurface",
-        geomKey,
+        geometry,
     )
     _add_surface_from_element(
         building,
         element,
         nsmap,
         "bldg:boundedBy/bldg:GroundSurface",
-        geomKey,
+        geometry,
     )
     _add_surface_from_element(
         building,
         element,
         nsmap,
         "bldg:boundedBy/bldg:ClosureSurface",
-        geomKey,
+        geometry,
     )
 
     building.lod = 2
@@ -534,7 +520,7 @@ def _add_surface_from_element(
     element: ET.Element,
     nsmap: dict,
     target_str: str,
-    geomKey: str,
+    geometry: GeometryGML,
     id_str: str = "",
 ) -> None:
     """creates a dictionary from surfaces of lxml element
@@ -548,8 +534,8 @@ def _add_surface_from_element(
         namespace map of the root xml/gml file in form of a dicitionary
     target_str : str
         element to take coordinates from e.g. 'bldg:boundedBy/bldg:RoofSurface'
-    geomKey : str
-        geometry key to add surface to
+    geometry : GeometryGML
+        geometry to add surface to
     id_str : str, optional
         base string for dict index, by default ""
     """
@@ -569,7 +555,7 @@ def _add_surface_from_element(
             coordinates, used_id, target_str.rsplit(":")[-1], poly_id
         )
         if newSurface.isSurface:
-            building.add_surface_with_depthInfo(newSurface, geomKey, [0, 0])
+            geometry.add_surface(newSurface)
         else:
             building._warn_invalid_surface(used_id)
 
