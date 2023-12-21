@@ -263,25 +263,19 @@ def _load_building_information_from_json(
                 geometry["type"] == "MultiSurface"
                 or geometry["type"] == "CompositeSurface"
             ):
-                geom = building.get_geometry(geomKey)
-                pSolidId = geom.create_pseudoSolid("pyStadt_0")
-                geom.pseudoSolids[pSolidId].create_pseudoShell("pyStadt_0")
                 for i, surface in enumerate(geometry["boundaries"]):
                     _add_cityjson_surface_to_building(
-                        building, geomKey, vertices, surface, geometry["semantics"], [i]
+                        building, geometryObj, vertices, surface, geometry["semantics"], [i]
                     )
             elif (
                 geometry["type"] == "MultiSolid" or geometry["type"] == "CompositeSolid"
             ):
-                geom = building.get_geometry(geomKey)
                 for i, solid in enumerate(geometry["boundaries"]):
-                    pSolidId = geom.create_pseudoSolid(f"pyStadt_{i}")
                     for j, shell in enumerate(solid):
-                        geom.pseudoSolids[pSolidId].create_pseudoShell(f"pyStadt_{j}")
                         for k, surface in enumerate(shell):
                             _add_cityjson_surface_to_building(
                                 building,
-                                geomKey,
+                                geometryObj,
                                 vertices,
                                 surface,
                                 geometry["semantics"],
@@ -344,7 +338,7 @@ def _add_cityjson_surface_to_building(
         surfaceCoor.append(surfaceCoor[0])
 
     newSurface = SurfaceGML(np.array(surfaceCoor).flatten(), surfaceId, surfaceType)
-    if newSurface.is_surface:
+    if newSurface.isSurface:
         if len(depthInfo) == 3:
             geometry.add_surface(newSurface, str(depthInfo))
         else:

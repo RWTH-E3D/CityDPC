@@ -250,7 +250,7 @@ def __create_cityobject_dict(
     elif building.is_building_part:
         cityobject["attributes"]["parent"] = [building.parent_gml_id]
 
-    if len(building.geometries) > 1:
+    if len(building.geometries) > 0:
         cityobject["geometry"] = []
 
         for geometry in building.geometries.values():
@@ -312,7 +312,7 @@ def __create_geometry_dict(
     geometry_dict["type"] = geometry.type
 
     # add the lod
-    geometry_dict["lod"] = geometry.lod
+    geometry_dict["lod"] = str(geometry.lod)
 
     # add the vertices
     boundaries = []
@@ -320,13 +320,14 @@ def __create_geometry_dict(
     surfaces = []
     values = []
 
-    for pSolid in geometry.pseudoSolids:
-        solidList = []
-        solidValList = []
-        for pShell in pSolid.pseudoShells:
+    if geometry.type == "CompositeSolid" or geometry.type == "MultiSolid":
+        for _, surfaceIDs in geometry.solids.items():
+            solidList = []
+            solidValList = []
             shellList = []
             shellValList = []
-            for surface in pShell.surfaces:
+            for surfaceID in surfaceIDs:
+                surface = geometry.get_surface(surfaceID)
                 update_min_max(dataset, surface)
                 surfaceVerts = __surface_to_vertices(
                     surface, transformOld, transformNew, vertices
@@ -336,24 +337,34 @@ def __create_geometry_dict(
                 shellValList.append(semanticsIndex)
             solidList.append(shellList)
             solidValList.append(shellValList)
+            values.append(solidValList)
+            boundaries.append(solidList)
+    elif geometry.type == "Solid":
+        solidList = []
+        solidValList = []
+        for surfaceID in geometry.solids:
+            surface = geometry.get_surface(surfaceID)
+            update_min_max(dataset, surface)
+            surfaceVerts = __surface_to_vertices(
+                surface, transformOld, transformNew, vertices
+            )
+            solidList.append([surfaceVerts])
+            semanticsIndex = __update_surfaces_dict(surface, surfaces)
+            solidValList.append(semanticsIndex)
         values.append(solidValList)
         boundaries.append(solidList)
-
-    semantics = {"surfaces": surfaces, "values": []}
-    if geometry.type == "CompositeSolid" or geometry.type == "MultiSolid":
-        geometry_dict["boundaries"] = boundaries
-        semantics["values"] = values
-    elif geometry.type == "Solid":
-        geometry_dict["boundaries"] = boundaries[0]
-        semantics["values"] = values[0]
     elif geometry.type == "MultiSurface" or geometry.type == "CompositeSurface":
-        geometry_dict["boundaries"] = boundaries[0][0]
-        semantics["values"] = values[0][0]
-    else:
-        logger.error(
-            f"unable to add geometry of type {geometry.type} of {geometry.parentID}"
-        )
-        return
+        for surface in geometry.surfaces:
+            update_min_max(dataset, surface)
+            surfaceVerts = __surface_to_vertices(
+                surface, transformOld, transformNew, vertices
+            )
+            boundaries.append([surfaceVerts])
+            semanticsIndex = __update_surfaces_dict(surface, surfaces)
+            values.append(semanticsIndex)
+
+    geometry_dict["boundaries"] = boundaries
+    semantics = {"surfaces": surfaces, "values": values}
 
     if geometry.lod > 1:
         geometry_dict["semantics"] = semantics
