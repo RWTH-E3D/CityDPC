@@ -13,7 +13,7 @@ from pyStadt.util.envelope import update_min_max
 import json
 
 
-def write_ciyjson_file(
+def write_cityjson_file(
     dataset: Dataset,
     filename: str,
     version: str = "2.0",
@@ -239,7 +239,7 @@ def __create_cityobject_dict(
     ]:
         value = getattr(building, i)
         if value is not None:
-            attributes = value
+            attributes[i] = value
     if attributes != {}:
         cityobject["attributes"] = attributes
 
@@ -261,7 +261,7 @@ def __create_cityobject_dict(
             )
 
     if not building.address.address_is_empty():
-        cityobject["address"] = {}
+        cityobject["address"] = [{}]
         for i in [
             "countryName",
             "locality_type",
@@ -273,7 +273,7 @@ def __create_cityobject_dict(
         ]:
             value = getattr(building.address, i)
             if value is not None:
-                cityobject["address"][i] = value
+                cityobject["address"][0][i] = value
 
     return cityobject, vertices
 
@@ -342,8 +342,7 @@ def __create_geometry_dict(
     elif geometry.type == "Solid":
         solidList = []
         solidValList = []
-        for surfaceID in geometry.solids:
-            surface = geometry.get_surface(surfaceID)
+        for surface in geometry.surfaces:
             update_min_max(dataset, surface)
             surfaceVerts = __surface_to_vertices(
                 surface, transformOld, transformNew, vertices
