@@ -11,6 +11,7 @@ import numpy as np
 import xml.etree.ElementTree as ET
 
 from pyStadt.dataset import Dataset
+from pyStadt.core.input.citygmlInput import load_buildings_from_xml_file
 from pyStadt.tools.partywall import get_party_walls
 
 """
@@ -206,7 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # party
         current_data = Dataset()
-        current_data.add_buildings_from_xml_file(fileName)
+        load_buildings_from_xml_file(current_data, fileName)
         party_walls = get_party_walls(current_data)
         print(f"party wall count= {len(party_walls)}")
 

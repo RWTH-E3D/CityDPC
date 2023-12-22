@@ -36,7 +36,7 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                     {
                         "poly_id": groundSurface.polygon_id,
                         "coor": groundSurface.gml_surface_2array,
-                        "parent": building_0.gml_id,
+                        "parent": building_0,
                     }
                 )
 
