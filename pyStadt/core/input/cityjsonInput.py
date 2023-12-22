@@ -265,7 +265,12 @@ def _load_building_information_from_json(
             ):
                 for i, surface in enumerate(geometry["boundaries"]):
                     _add_cityjson_surface_to_building(
-                        building, geometryObj, vertices, surface, geometry["semantics"], [i]
+                        building,
+                        geometryObj,
+                        vertices,
+                        surface,
+                        geometry["semantics"],
+                        [i],
                     )
             elif (
                 geometry["type"] == "MultiSolid" or geometry["type"] == "CompositeSolid"
