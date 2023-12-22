@@ -70,8 +70,12 @@ class SurfaceGML(object):
         self.surface_tilt = self.get_gml_tilt()
 
         if self.surface_type is None:
-            # infer surface type by tilt angle
-            pass
+            if self.surface_tilt == 0.0:
+                self.surface_type = "GroundSurface"
+            elif self.surface_tilt == 90.0:
+                self.surface_type = "WallSurface"
+            else:
+                self.surface_type = "RoofSurface"
 
     def get_gml_area(self):
         """calc the area of a gml_surface defined by gml coordinates

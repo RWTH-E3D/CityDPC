@@ -379,62 +379,17 @@ def _get_building_surfaces_from_xml_element(
 
         building.lod = "1"
         poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
-        all_poylgons = {}
         for i, poly_E in enumerate(poly_Es):
             poly_id = _get_attrib_of_xml_element(
                 poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
             )
             coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            all_poylgons[poly_id if poly_id else f"pyStadt_poly_{i}"] = coordinates
-
-        # search for polygon with lowest and highest average height
-        # lowest average height is ground surface
-        # highest average height is roof surface
-        # all other ar wall surfaces
-        ground_id = None
-        ground_average_height = None
-        roof_id = None
-        roof_average_height = None
-
-        for poly_id, polygon in all_poylgons.items():
-            polygon_average_height = sum([i[2] for i in polygon]) / len(polygon)
-
-            if ground_id is None:
-                ground_id = poly_id
-                ground_average_height = polygon_average_height
-            elif polygon_average_height < ground_average_height:
-                ground_id = poly_id
-                ground_average_height = polygon_average_height
-
-            if roof_id is None:
-                roof_id = poly_id
-                roof_average_height = polygon_average_height
-            elif polygon_average_height > roof_average_height:
-                roof_id = poly_id
-                roof_average_height = polygon_average_height
-        newSurface = SurfaceGML(all_poylgons[roof_id], roof_id, "RoofSurface", None)
-        if newSurface.isSurface:
-            geometry.add_surface(newSurface)
-        else:
-            building._warn_invalid_surface(roof_id)
-        del all_poylgons[roof_id]
-        newSurface = SurfaceGML(
-            all_poylgons[ground_id], ground_id, "GroundSurface", None
-        )
-        if newSurface.isSurface:
-            geometry.add_surface(newSurface)
-        else:
-            building._warn_invalid_surface(ground_id)
-        del all_poylgons[ground_id]
-
-        for wall_id, coordinates in all_poylgons.items():
-            newSurface = SurfaceGML(coordinates, wall_id, "LoD1_wall", None)
+            poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+            newSurface = SurfaceGML(coordinates, poly_id)
             if newSurface.isSurface:
                 geometry.add_surface(newSurface)
             else:
-                building._warn_invalid_surface(wall_id)
-
-        return
+                building._warn_invalid_surface(poly_id)
 
     # everything greater than LoD1
     solid_E = element.find("bldg:lod2Solid", nsmap)
