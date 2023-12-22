@@ -353,12 +353,13 @@ def _add_lod_2_geometry_to_xml_building(
         )
 
     for surface in geometry.get_surfaces():
-        href_id = f"#{surface.polygon_id}"
-        ET.SubElement(
-            compositeSurface_E,
-            ET.QName(nClass.gml, "surfaceMember"),
-            attrib={ET.QName(nClass.xlink, "href"): href_id},
-        )
+        if geometry.type == "Solid":
+            href_id = f"#{surface.polygon_id}"
+            ET.SubElement(
+                compositeSurface_E,
+                ET.QName(nClass.gml, "surfaceMember"),
+                attrib={ET.QName(nClass.xlink, "href"): href_id},
+            )
 
         boundedBy_E = ET.SubElement(building_E, ET.QName(nClass.bldg, "boundedBy"))
         wallRoofGround_E = ET.SubElement(
