@@ -365,7 +365,9 @@ def _add_lod_2_geometry_to_xml_building(
             boundedBy_E,
             ET.QName(nClass.bldg, surface.surface_type),
         )
-        if not surface.surface_id.startswith("pyStadt_"):
+        if surface.surface_id is not None and not surface.surface_id.startswith(
+            "pyStadt_"
+        ):
             wallRoofGround_E.attrib[
                 "{http://www.opengis.net/gml}id"
             ] = surface.surface_id
@@ -384,7 +386,9 @@ def _add_lod_2_geometry_to_xml_building(
             surfaceMember_E,
             ET.QName(nClass.gml, "Polygon"),
         )
-        if not surface.polygon_id.startswith("pyStadt_"):
+        if surface.polygon_id is not None and not surface.polygon_id.startswith(
+            "pyStadt_"
+        ):
             polygon_E.attrib["{http://www.opengis.net/gml}id"] = surface.polygon_id
 
         exterior_E = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
