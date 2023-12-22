@@ -113,19 +113,32 @@ def load_buildings_from_json_file(
     # transform all vertices to global coordinates
     vertices = data["vertices"]
     if not dontTransform:
-        for vertex in vertices:
-            vertex[0] = (
-                vertex[0] * data["transform"]["scale"][0]
-                + data["transform"]["translate"][0]
+        if (
+            dataset.transform == {}
+            or dataset.transform == {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+            or ignoreExistingTransform
+        ):
+            for vertex in vertices:
+                vertex[0] = (
+                    vertex[0] * data["transform"]["scale"][0]
+                    + data["transform"]["translate"][0]
+                )
+                vertex[1] = (
+                    vertex[1] * data["transform"]["scale"][1]
+                    + data["transform"]["translate"][1]
+                )
+                vertex[2] = (
+                    vertex[2] * data["transform"]["scale"][2]
+                    + data["transform"]["translate"][2]
+                )
+            if dataset.transform == {}:
+                dataset.transform = data["transform"]
+        else:
+            logger.error(
+                "Trying to add file with differenet transform object than "
+                + "dataset. Either transform or forceIgnore the transformation"
             )
-            vertex[1] = (
-                vertex[1] * data["transform"]["scale"][1]
-                + data["transform"]["translate"][1]
-            )
-            vertex[2] = (
-                vertex[2] * data["transform"]["scale"][2]
-                + data["transform"]["translate"][2]
-            )
+            return
     else:
         if dataset.transform != {}:
             if dataset.transform != data["transform"]:
