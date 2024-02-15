@@ -13,6 +13,7 @@ import lxml.etree as ET
 import pyStadt.util.citygmlClasses as citygmlClasses
 from pyStadt.util.envelope import update_min_max
 from pyStadt.logger import logger
+import uuid
 
 
 def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") -> None:
@@ -353,8 +354,12 @@ def _add_lod_2_geometry_to_xml_building(
         )
 
     for surface in geometry.get_surfaces():
+        if surface.polygon_id is not None:
+            polyID = surface.polygon_id
+        else:
+            polyID = str(uuid.uuid1())
         if geometry.type == "Solid":
-            href_id = f"#{surface.polygon_id}"
+            href_id = f"#{polyID}"
             ET.SubElement(
                 compositeSurface_E,
                 ET.QName(nClass.gml, "surfaceMember"),
@@ -387,6 +392,9 @@ def _add_lod_2_geometry_to_xml_building(
             surfaceMember_E,
             ET.QName(nClass.gml, "Polygon"),
         )
+        if geometry.type == "Solid":
+            polygon_E.attrib["{http://www.opengis.net/gml}id"] = polyID
+
         if surface.polygon_id is not None and not surface.polygon_id.startswith(
             "pyStadt_"
         ):
