@@ -43,7 +43,10 @@ class GeometryGML:
         surface : SurfaceGML
             surface to be added
         """
-        if surface.surface_id in self.get_all_surface_ids():
+        if (
+            surface.surface_id is not None
+            and surface.surface_id in self.get_all_surface_ids()
+        ):
             logger.error(
                 f"Surface with id {surface.surface_id} already present on "
                 + f"{self.parentID}"
