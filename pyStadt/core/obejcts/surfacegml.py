@@ -18,7 +18,7 @@ class SurfaceGML(object):
     Parameters
     ----------
 
-    gml_surface : iterable
+    gml_surface : list[float]
         list of gml points with srsDimension=3 the first 3 and the last 3
         entries must describe the same point in CityGML
 
@@ -28,7 +28,11 @@ class SurfaceGML(object):
     """
 
     def __init__(
-        self, gml_surface, surface_id=None, surface_type=None, polygon_id=None
+        self,
+        gml_surface: list[float],
+        surface_id=None,
+        surface_type=None,
+        polygon_id=None,
     ):
         self.gml_surface = gml_surface
         self.surface_id = surface_id
@@ -62,7 +66,7 @@ class SurfaceGML(object):
             return
         self.isSurface = True
 
-        self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
+        self.gml_surface_2array = np.reshape(self.gml_surface, (-1, 3))
         self.creationDate = None
 
         self.surface_area = self.get_gml_area()
