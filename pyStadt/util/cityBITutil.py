@@ -31,7 +31,7 @@ def add_flat_roof_and_walls(
     # create wall surfaces
     for i, crd in enumerate(gC2D[:-1]):
         crd = list(crd)
-        nCrd = gC2D[i + 1]
+        nCrd = list(gC2D[i + 1])
         wallSurface = SurfaceGML(
             np.array(
                 [
@@ -48,7 +48,7 @@ def add_flat_roof_and_walls(
         geometry.add_surface(wallSurface)
     # create roof surface
     roofSurface = SurfaceGML(
-        np.array([crd + [bHAbs] for crd in gC2D]).flatten(),
+        np.array([list(crd) + [bHAbs] for crd in gC2D]).flatten(),
         surface_type="RoofSurface",
         surface_id=f"pyStadt_roof_{id}",
     )
@@ -80,8 +80,8 @@ def add_monopitch_roof_and_walls(
         and 3 (inclusive)
     """
     for i in range(4):
-        crd = gC2D[i]
-        nCrd = gC2D[i + 1]
+        crd = list(gC2D[i])
+        nCrd = list(gC2D[i + 1])
         # create wall surfaces
         if i == roofOrientation:
             # both low
@@ -129,7 +129,7 @@ def add_monopitch_roof_and_walls(
     roofCrds = []
     for i, crd in enumerate(gC2D):
         crd = list(crd)
-        nCrd = gC2D[i + 1]
+        nCrd = list(gC2D[i + 1])
         if i == roofOrientation or i == roofOrientation + 1:
             roofCrds.append(crd + [bHAbs])
         else:
@@ -175,8 +175,8 @@ def add_dualpent_roof_and_walls(
     highPoints = []
     lowPoints = []
     for i in range(4):
-        crd = gC2D[i]
-        nCrd = gC2D[i + 1]
+        crd = list(gC2D[i])
+        nCrd = list(gC2D[i + 1])
         if i == roofOrientation:
             # wall on which the higher roof is ending
             coords = [
@@ -299,8 +299,8 @@ def add_gabled_roof_and_walls(
     # calculating wall surfaces
     # assuming the heading equals one of the 4 sided walls
     for i in range(4):
-        crd = gC2D[i]
-        nCrd = gC2D[i + 1]
+        crd = list(gC2D[i])
+        nCrd = list(gC2D[i + 1])
         if (
             i == roofOrientation
             or i - roofOrientation == 2
@@ -415,8 +415,8 @@ def add_hipped_roof_and_walls(
         building wall height absolute (lowest height of the roof in coordinate system)
     """
     for i in range(4):
-        crd = gC2D[i]
-        nCrd = gC2D[i + 1]
+        crd = list(gC2D[i])
+        nCrd = list(gC2D[i + 1])
         coords = [
             crd + [gSH],
             nCrd + [gSH],
@@ -542,8 +542,8 @@ def add_pavilion_roof_and_walls(
     """
     # calculating wall surfaces
     for i in range(len(gC2D) - 1):
-        crd = gC2D[i]
-        nCrd = gC2D[i + 1]
+        crd = list(gC2D[i])
+        nCrd = list(gC2D[i + 1])
         coords = [
             crd + [gSH],
             nCrd + [gSH],

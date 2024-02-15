@@ -15,7 +15,7 @@ class Dataset:
 
     """
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: str = None, defaultScale=True) -> None:
         self.name = name
         self._files = []
         self.srsName = None
@@ -25,7 +25,13 @@ class Dataset:
 
         self._minimum = [math.inf, math.inf, math.inf]
         self._maximum = [-math.inf, -math.inf, -math.inf]
-        self.transform = {}
+        if defaultScale:
+            self.transform = {
+                "scale": [1, 1, 1],
+                "translate": [0, 0, 0],
+            }
+        else:
+            self.transform = {}
 
         logger.warning(
             "The dictionaries 'walls', 'roofs', 'grounds' and 'closures' "
