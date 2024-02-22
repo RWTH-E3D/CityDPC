@@ -225,7 +225,7 @@ def _load_building_information_from_json(
             "roofType",
             "usage",
             "yearOfConstruction",
-            "storeysAboceGround",
+            "storeysAboveGround",
             "storeysBelowGround",
         ]
         for key, value in attributes.items():
