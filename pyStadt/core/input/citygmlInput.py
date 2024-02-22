@@ -309,20 +309,26 @@ def _get_building_attributes_from_xml_element(
         buildingElement, nsmap, "bldg:function"
     )
     building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
-    building.yearOfConstruction = _get_text_of_xml_element(
+    building.yearOfConstruction = _get_int_of_xml_element(
         buildingElement, nsmap, "bldg:yearOfConstruction"
     )
     building.roofType = _get_text_of_xml_element(
         buildingElement, nsmap, "bldg:roofType"
     )
-    building.measuredHeight = _get_text_of_xml_element(
+    building.measuredHeight = _get_float_of_xml_element(
         buildingElement, nsmap, "bldg:measuredHeight"
     )
-    building.storeysAboveGround = _get_text_of_xml_element(
+    building.storeysAboveGround = _get_int_of_xml_element(
         buildingElement, nsmap, "bldg:storeysAboveGround"
     )
-    building.storeysBelowGround = _get_text_of_xml_element(
+    building.storeyHeightsAboveGround = _get_float_of_xml_element(
+        buildingElement, nsmap, "bldg:storeyHeightsAboveGround"
+    )
+    building.storeysBelowGround = _get_int_of_xml_element(
         buildingElement, nsmap, "bldg:storeysBelowGround"
+    )
+    building.storeyHeightsBelowGround = _get_float_of_xml_element(
+        buildingElement, nsmap, "bldg:storeyHeightsBelowGround"
     )
 
 
@@ -548,6 +554,62 @@ def _get_text_of_xml_element(
         return None
     if res_E is not None:
         return res_E.text
+    return None
+
+
+def _get_float_of_xml_element(
+    element: ET.Element, nsmap: dict, target: str
+) -> float | None:
+    """gets the float value of a target element
+
+    Parameters
+    ----------
+    element : ET.Element
+        parent lxml.etree element of target element
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary
+    target : str
+        prefixed target element name
+
+    Returns
+    -------
+    float | None
+        returns either the value as a float or None
+    """
+    res = _get_text_of_xml_element(element, nsmap, target)
+    if res is not None:
+        try:
+            return float(res)
+        except:
+            logger.error(f"Unable to convert {res} to float")
+    return None
+
+
+def _get_int_of_xml_element(
+    element: ET.Element, nsmap: dict, target: str
+) -> int | None:
+    """gets the int value of a target element
+
+    Parameters
+    ----------
+    element : ET.Element
+        parent lxml.etree element of target element
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary
+    target : str
+        prefixed target element name
+
+    Returns
+    -------
+    int | None
+        returns either the value as a int or None
+    """
+    res = _get_text_of_xml_element(element, nsmap, target)
+    if res is not None:
+        try:
+            return int(res)
+        except:
+            logger.error(f"Unable to convert {res} to int")
     return None
 
 

@@ -47,7 +47,9 @@ class AbstractBuilding:
         self.roofType = None
         self.measuredHeight = None
         self.storeysAboveGround = None
+        self.storeyHeightsAboveGround = None
         self.storeysBelowGround = None
+        self.storeyHeightsBelowGround = None
 
         self.terrainIntersections = None
 

@@ -199,10 +199,20 @@ def _add_building_to_cityModel_xml(
             building_E, ET.QName(nClass.bldg, "storeysAboveGround")
         ).text = building.storeysAboveGround
 
+    if building.storeyHeightsAboveGround is not None:
+        ET.SubElement(
+            building_E, ET.QName(nClass.bldg, "storeyHeightsAboveGround")
+        ).text = building.storeyHeightsAboveGround
+
     if building.storeysBelowGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeysBelowGround")
         ).text = building.storeysBelowGround
+
+    if building.storeyHeightsBelowGround is not None:
+        ET.SubElement(
+            building_E, ET.QName(nClass.bldg, "storeyHeightsBelowGround")
+        ).text = building.storeyHeightsBelowGround
 
     for i, geometry in enumerate(building.get_geometries()):
         if geometry.lod == 0:

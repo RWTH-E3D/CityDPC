@@ -235,7 +235,9 @@ def __create_cityobject_dict(
         "roofType",
         "measuredHeight",
         "storeysAboveGround",
+        "storeyHeightsAboveGround"
         "storeysBelowGround",
+        "storeyHeightsBelowGround",
     ]:
         value = getattr(building, i)
         if value is not None:
