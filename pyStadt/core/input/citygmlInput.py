@@ -200,29 +200,36 @@ def _load_address_info_from_xml(
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary
     """
+    if "xal" in nsmap.keys():
+        xal = "xal"
+    elif "xAL" in nsmap.keys():
+        xal = "xAL"
+    else:
+        logger.error("Namespace xal/xAL issue")
+
     if "{http://www.opengis.net/gml}id" in addressElement.attrib.keys():
         address.gml_id = addressElement.attrib["{http://www.opengis.net/gml}id"]
 
     address.countryName = _get_text_of_xml_element(
-        addressElement, nsmap, ".//xal:CountryName"
+        addressElement, nsmap, f".//{xal}:CountryName"
     )
     address.locality_type = _get_attrib_of_xml_element(
-        addressElement, nsmap, ".//xal:Locality", "Type"
+        addressElement, nsmap, f".//{xal}:Locality", "Type"
     )
     address.localityName = _get_text_of_xml_element(
-        addressElement, nsmap, ".//xal:LocalityName"
+        addressElement, nsmap, f".//{xal}:LocalityName"
     )
     address.thoroughfare_type = _get_attrib_of_xml_element(
-        addressElement, nsmap, ".//xal:Thoroughfare", "Type"
+        addressElement, nsmap, f".//{xal}:Thoroughfare", "Type"
     )
     address.thoroughfareNumber = _get_text_of_xml_element(
-        addressElement, nsmap, ".//xal:ThoroughfareNumber"
+        addressElement, nsmap, f".//{xal}:ThoroughfareNumber"
     )
     address.thoroughfareName = _get_text_of_xml_element(
-        addressElement, nsmap, ".//xal:ThoroughfareName"
+        addressElement, nsmap, f".//{xal}:ThoroughfareName"
     )
     address.postalCodeNumber = _get_text_of_xml_element(
-        addressElement, nsmap, ".//xal:PostalCodeNumber"
+        addressElement, nsmap, f".//{xal}:PostalCodeNumber"
     )
 
 
