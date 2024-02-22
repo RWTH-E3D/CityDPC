@@ -31,6 +31,7 @@ class AbstractBuilding:
         self.grounds = {}
         self.closures = {}
         self.roof_volume = None
+        self.roof_height = None
         self.lod = None
         self.is_building_part = None
 
@@ -207,6 +208,8 @@ class AbstractBuilding:
                 )
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
+                if self.roof_height is None or self.roof_height < minimum_roof_height:
+                    self.roof_height = minimum_roof_height
 
     def _warn_invalid_surface(self, surfaceID: str) -> None:
         """logs warning about invalid surface
