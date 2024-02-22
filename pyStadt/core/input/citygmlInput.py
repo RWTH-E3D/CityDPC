@@ -52,7 +52,7 @@ def load_buildings_from_xml_file(
     root = tree.getroot()
     nsmap = root.nsmap
 
-    if None in nsmap.keys():
+    if "core" not in nsmap.keys() and None in nsmap.keys():
         nsmap["core"] = nsmap[None]
 
     building_ids = []
