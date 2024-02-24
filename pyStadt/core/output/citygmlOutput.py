@@ -182,7 +182,7 @@ def _add_building_to_cityModel_xml(
     if building.yearOfConstruction is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "yearOfConstruction")
-        ).text = building.yearOfConstruction
+        ).text = str(building.yearOfConstruction)
 
     if building.roofType is not None:
         ET.SubElement(
@@ -192,27 +192,27 @@ def _add_building_to_cityModel_xml(
     if building.measuredHeight is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "measuredHeight"), uom="urn:adv:uom:m"
-        ).text = building.measuredHeight
+        ).text = str(building.measuredHeight)
 
     if building.storeysAboveGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeysAboveGround")
-        ).text = building.storeysAboveGround
+        ).text = str(building.storeysAboveGround)
 
     if building.storeyHeightsAboveGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeyHeightsAboveGround")
-        ).text = building.storeyHeightsAboveGround
+        ).text = str(building.storeyHeightsAboveGround)
 
     if building.storeysBelowGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeysBelowGround")
-        ).text = building.storeysBelowGround
+        ).text = str(building.storeysBelowGround)
 
     if building.storeyHeightsBelowGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeyHeightsBelowGround")
-        ).text = building.storeyHeightsBelowGround
+        ).text = str(building.storeyHeightsBelowGround)
 
     for i, geometry in enumerate(building.get_geometries()):
         if geometry.lod == 0:
