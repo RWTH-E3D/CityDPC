@@ -235,7 +235,7 @@ def __create_cityobject_dict(
         "roofType",
         "measuredHeight",
         "storeysAboveGround",
-        "storeyHeightsAboveGround"
+        "storeyHeightsAboveGround",
         "storeysBelowGround",
         "storeyHeightsBelowGround",
     ]:
