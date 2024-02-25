@@ -203,6 +203,7 @@ class AbstractBuilding:
                     # roof surface is flat -> no volume to calculate
                     continue
                 minimum_roof_height = np.min(roof_surface.gml_surface_2array, axis=0)[2]
+                maximum_roof_height = np.max(roof_surface.gml_surface_2array, axis=0)[2]
                 closing_points = np.array(roof_surface.gml_surface_2array, copy=True)
                 closing_points[:, 2] = minimum_roof_height
                 closed = np.concatenate(
@@ -210,8 +211,11 @@ class AbstractBuilding:
                 )
                 hull = ConvexHull(closed)
                 self.roof_volume += round(hull.volume, 3)
-                if self.roof_height is None or self.roof_height < minimum_roof_height:
-                    self.roof_height = minimum_roof_height
+                if (
+                    self.roof_height is None
+                    or maximum_roof_height - minimum_roof_height > self.roof_height
+                ):
+                    self.roof_height = maximum_roof_height - minimum_roof_height
 
     def _warn_invalid_surface(self, surfaceID: str) -> None:
         """logs warning about invalid surface
