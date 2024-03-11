@@ -36,9 +36,9 @@ def add_flat_roof_and_walls(
             np.array(
                 [
                     crd + [gSH],
-                    nCrd + [gSH],
-                    nCrd + [bHAbs],
                     crd + [bHAbs],
+                    nCrd + [bHAbs],
+                    nCrd + [gSH],
                     crd + [gSH],
                 ]
             ).flatten(),
@@ -46,9 +46,12 @@ def add_flat_roof_and_walls(
             surface_id=f"pyStadt_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
+
+    helper = [list(crd) + [bHAbs] for crd in gC2D]
+    helper.reverse()
     # create roof surface
     roofSurface = SurfaceGML(
-        np.array([list(crd) + [bHAbs] for crd in gC2D]).flatten(),
+        np.array(helper).flatten(),
         surface_type="RoofSurface",
         surface_id=f"pyStadt_roof_{id}",
     )
@@ -56,8 +59,13 @@ def add_flat_roof_and_walls(
 
 
 def add_monopitch_roof_and_walls(
-        geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float,
-        bHAbs: float, bWAbs: float, roofOrientation: int
+    geometry: GeometryGML,
+    id: int,
+    gC2D: list[list[float]],
+    gSH: float,
+    bHAbs: float,
+    bWAbs: float,
+    roofOrientation: int,
 ):
     """create a monopitch roof and walls from a list of coordinates
 
@@ -79,6 +87,8 @@ def add_monopitch_roof_and_walls(
         orientation of roof, refers to the index of the groundCoordinates list between 0
         and 3 (inclusive)
     """
+
+    roofCrds = []
     for i in range(4):
         crd = list(gC2D[i])
         nCrd = list(gC2D[i + 1])
@@ -87,36 +97,36 @@ def add_monopitch_roof_and_walls(
             # both low
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
                 crd + [bWAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         elif i - roofOrientation == 2 or i - roofOrientation == -2:
             # both high
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bHAbs],
                 crd + [bHAbs],
+                nCrd + [bHAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         elif (roofOrientation + 1) % 4 - (i + 1) == -1:
             # i low     i+1 high
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bHAbs],
                 crd + [bWAbs],
+                nCrd + [bHAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         else:
             # i high    i+1 low
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
                 crd + [bHAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         wallSurface = SurfaceGML(
@@ -125,15 +135,10 @@ def add_monopitch_roof_and_walls(
             surface_id=f"pyStadt_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
-    # create roof surface
-    roofCrds = []
-    for i, crd in enumerate(gC2D):
-        crd = list(crd)
-        nCrd = list(gC2D[i + 1])
-        if i == roofOrientation or i == roofOrientation + 1:
-            roofCrds.append(crd + [bHAbs])
-        else:
-            roofCrds.append(crd + [bWAbs])
+        roofCrds.append(coords[1])
+
+    roofCrds.append(roofCrds[0])
+    roofCrds.reverse()
     roofSurface = SurfaceGML(
         np.array(roofCrds).flatten(),
         surface_type="RoofSurface",
@@ -143,8 +148,14 @@ def add_monopitch_roof_and_walls(
 
 
 def add_dualpent_roof_and_walls(
-    geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float, bHAbs: float,
-    bWAbs: float, roofOrientation: int, roofHeight: float
+    geometry: GeometryGML,
+    id: int,
+    gC2D: list[list[float]],
+    gSH: float,
+    bHAbs: float,
+    bWAbs: float,
+    roofOrientation: int,
+    roofHeight: float,
 ):
     """create a dualpent roof and walls from a list of coordinates
 
@@ -181,9 +192,9 @@ def add_dualpent_roof_and_walls(
             # wall on which the higher roof is ending
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
                 crd + [bWAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
             highPoints = [crd, nCrd]
@@ -191,9 +202,9 @@ def add_dualpent_roof_and_walls(
             # wall on which the lower roof is ending
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
                 crd + [bWAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
             lowPoints = [crd, nCrd]
@@ -202,10 +213,11 @@ def add_dualpent_roof_and_walls(
             center0 = cO.calc_center([crd, nCrd])
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
+                crd + [bWAbs],
+                center0 + [bHAbs],
+                center0 + [sH_pHalfRoof],
                 nCrd + [bWAbs],
-                center0 + [sH_pHalfRoof],
-                center0 + [sH_pHalfRoof],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         else:
@@ -213,11 +225,11 @@ def add_dualpent_roof_and_walls(
             center1 = cO.calc_center([crd, nCrd])
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [sH_pHalfRoof],
-                center1 + [sH_pHalfRoof],
-                center1 + [bWAbs],
                 crd + [bWAbs],
+                center1 + [sH_pHalfRoof],
+                center1 + [bHAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         wallSurface = SurfaceGML(
@@ -230,9 +242,9 @@ def add_dualpent_roof_and_walls(
     # for the wall between the two roof surfaces
     coords = [
         center0 + [sH_pHalfRoof],
+        center0 + [bHAbs],
+        center1 + [bHAbs],
         center1 + [sH_pHalfRoof],
-        center1 + [gSH],
-        center0 + [gSH],
         center0 + [sH_pHalfRoof],
     ]
     wallSurface = SurfaceGML(
@@ -244,11 +256,11 @@ def add_dualpent_roof_and_walls(
     # calculating roof surfaces
     # for roof with higher points
     roofCrds = [
-        highPoints[0] + [bHAbs],
-        highPoints[1] + [bHAbs],
-        center0 + [bWAbs],
-        center1 + [bWAbs],
-        highPoints[0] + [bHAbs],
+        highPoints[0] + [bWAbs],
+        center1 + [bHAbs],
+        center0 + [bHAbs],
+        highPoints[1] + [bWAbs],
+        highPoints[0] + [bWAbs],
     ]
     roofSurface = SurfaceGML(
         np.array(roofCrds).flatten(),
@@ -259,9 +271,9 @@ def add_dualpent_roof_and_walls(
     # for roof with lower points
     roofCrds = [
         lowPoints[0] + [bWAbs],
-        lowPoints[1] + [bWAbs],
-        center1 + [sH_pHalfRoof],
         center0 + [sH_pHalfRoof],
+        center1 + [sH_pHalfRoof],
+        lowPoints[1] + [bWAbs],
         lowPoints[0] + [bWAbs],
     ]
     roofSurface = SurfaceGML(
@@ -273,8 +285,13 @@ def add_dualpent_roof_and_walls(
 
 
 def add_gabled_roof_and_walls(
-        geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float,
-        bHAbs: float, bWAbs: float, roofOrientation: int
+    geometry: GeometryGML,
+    id: int,
+    gC2D: list[list[float]],
+    gSH: float,
+    bHAbs: float,
+    bWAbs: float,
+    roofOrientation: int,
 ):
     """create a gabled roof and walls from a list of coordinates
 
@@ -309,19 +326,19 @@ def add_gabled_roof_and_walls(
             # square surfaces
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
                 crd + [bWAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         else:
             # surfaces with "5th", higher point
             coords = [
                 crd + [gSH],
-                nCrd + [gSH],
-                nCrd + [bWAbs],
-                cO.calc_center([crd, nCrd]) + [bHAbs],
                 crd + [bWAbs],
+                cO.calc_center([crd, nCrd]) + [bHAbs],
+                nCrd + [bWAbs],
+                nCrd + [gSH],
                 crd + [gSH],
             ]
         wallSurface = SurfaceGML(
@@ -334,14 +351,14 @@ def add_gabled_roof_and_walls(
     # calculating roof surfaces
     if roofOrientation % 2 == 0:
         # square first, 5th second
-        c0 = cO.calc_center(list(gC2D)[1:3])
-        c1 = cO.calc_center(list(gC2D)[3:5])
+        c0 = cO.calc_center([list(gC2D[1]), list(gC2D[2])])
+        c1 = cO.calc_center([list(gC2D[0]), list(gC2D[3])])
         roofCrds = [
-            gC2D[0] + [bWAbs],
-            gC2D[1] + [bWAbs],
-            c0 + [bHAbs],
+            list(gC2D[0]) + [bWAbs],
             c1 + [bHAbs],
-            gC2D[0] + [bWAbs],
+            c0 + [bHAbs],
+            list(gC2D[1]) + [bWAbs],
+            list(gC2D[0]) + [bWAbs],
         ]
         roofSurface0 = SurfaceGML(
             np.array(roofCrds).flatten(),
@@ -349,11 +366,11 @@ def add_gabled_roof_and_walls(
             surface_id=f"pyStadt_roof_{id}_1",
         )
         roofCrds = [
-            gC2D[2] + [bWAbs],
-            gC2D[3] + [bWAbs],
-            c1 + [bHAbs],
+            list(gC2D[2]) + [bWAbs],
             c0 + [bHAbs],
-            gC2D[2] + [bWAbs],
+            c1 + [bHAbs],
+            list(gC2D[3]) + [bWAbs],
+            list(gC2D[2]) + [bWAbs],
         ]
         roofSurface1 = SurfaceGML(
             np.array(roofCrds).flatten(),
@@ -362,14 +379,14 @@ def add_gabled_roof_and_walls(
         )
     else:
         # 5th first, square second
-        c0 = cO.calc_center(list(gC2D)[0:2])
-        c1 = cO.calc_center(list(gC2D)[2:4])
+        c0 = cO.calc_center([list(gC2D[0]), list(gC2D[1])])
+        c1 = cO.calc_center([list(gC2D[2]), list(gC2D[3])])
         roofCrds = [
-            gC2D[1] + [bWAbs],
-            gC2D[2] + [bWAbs],
-            c1 + [bHAbs],
+            list(gC2D[1]) + [bWAbs],
             c0 + [bHAbs],
-            gC2D[1] + [bWAbs],
+            c1 + [bHAbs],
+            list(gC2D[2]) + [bWAbs],
+            list(gC2D[1]) + [bWAbs],
         ]
         roofSurface0 = SurfaceGML(
             np.array(roofCrds).flatten(),
@@ -377,11 +394,11 @@ def add_gabled_roof_and_walls(
             surface_id=f"pyStadt_roof_{id}_1",
         )
         roofCrds = [
-            gC2D[3] + [bWAbs],
-            gC2D[0] + [bWAbs],
-            c0 + [bHAbs],
+            list(gC2D[3]) + [bWAbs],
             c1 + [bHAbs],
-            gC2D[3] + [bWAbs],
+            c0 + [bHAbs],
+            list(gC2D[0]) + [bWAbs],
+            list(gC2D[3]) + [bWAbs],
         ]
         roofSurface1 = SurfaceGML(
             np.array(roofCrds).flatten(),
@@ -393,8 +410,12 @@ def add_gabled_roof_and_walls(
 
 
 def add_hipped_roof_and_walls(
-        geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float,
-        bHAbs: float, bWAbs: float
+    geometry: GeometryGML,
+    id: int,
+    gC2D: list[list[float]],
+    gSH: float,
+    bHAbs: float,
+    bWAbs: float,
 ):
     """create a hipped roof and walls from a list of coordinates
     roof ridge will be created alongside the longer side of the roof
@@ -419,9 +440,9 @@ def add_hipped_roof_and_walls(
         nCrd = list(gC2D[i + 1])
         coords = [
             crd + [gSH],
-            nCrd + [gSH],
-            nCrd + [bWAbs],
             crd + [bWAbs],
+            nCrd + [bWAbs],
+            nCrd + [gSH],
             crd + [gSH],
         ]
         wallSurface = SurfaceGML(
@@ -442,11 +463,11 @@ def add_hipped_roof_and_walls(
 
     # list of groundSurface coordinates but with (surfaceHeight + wallHeight) as
     # 3d coordinate
-    sH_pWall_list = [i + [bWAbs] for i in gC2D.copy()]
+    sH_pWall_list = [list(i) + [bWAbs] for i in gC2D]
     if help_array[0] > help_array[1]:
         # longside first
         # getting some info about the heading of the roof
-        shortCenter = cO.calc_center(gC2D[1:3])
+        shortCenter = cO.calc_center([list(gC2D[1]), list(gC2D[2])])
         gabel_vector = cO.normedDirectionVector(gC2D[2], gC2D[3])
         # corners of roof
         c0 = [
@@ -459,31 +480,10 @@ def add_hipped_roof_and_walls(
             shortCenter[1] + (center_to_gabel + gabel_length) * gabel_vector[1],
             bHAbs,
         ]
-        #  roof surfaces
-        for i in range(4):
-            if i == 0:
-                standIn = [c0, c1]
-            elif i == 1:
-                standIn = [c0]
-            elif i == 2:
-                standIn = [c1, c0]
-            else:
-                standIn = [c1]
-            roofCrds = (
-                [sH_pWall_list[i], sH_pWall_list[i + 1]]
-                + standIn
-                + [sH_pWall_list[i]]
-            )
-            roofSurface = SurfaceGML(
-                np.array(roofCrds).flatten(),
-                surface_type="RoofSurface",
-                surface_id=f"pyStadt_roof_{id}_{i}",
-            )
-            geometry.add_surface(roofSurface)
     else:
         # short side first
         # getting some info about the heading of the roof
-        shortCenter = cO.calc_center(gC2D[0:2])
+        shortCenter = cO.calc_center([list(gC2D[0]), list(gC2D[1])])
         gabel_vector = cO.normedDirectionVector(gC2D[1], gC2D[2])
         # corners of roof
         c0 = [
@@ -496,32 +496,47 @@ def add_hipped_roof_and_walls(
             shortCenter[1] + (center_to_gabel + gabel_length) * gabel_vector[1],
             bHAbs,
         ]
-        # roof surfaces
-        for i in range(4):
+    # roof surfaces
+    for i in range(4):
+        if help_array[0] > help_array[1]:
+            if i == 0:
+                standIn = [c1, c0]
+            elif i == 1:
+                standIn = [c0]
+            elif i == 2:
+                standIn = [c0, c1]
+            else:
+                standIn = [c1]
+        else:
             if i == 0:
                 standIn = [c0]
             elif i == 1:
-                standIn = [c1, c0]
+                standIn = [c0, c1]
             elif i == 2:
                 standIn = [c1]
             else:
-                standIn = [c0, c1]
-            roofCrds = (
-                [sH_pWall_list[i], sH_pWall_list[i + 1]]
-                + standIn
-                + [sH_pWall_list[i]]
-            )
-            roofSurface = SurfaceGML(
-                np.array(roofCrds).flatten(),
-                surface_type="RoofSurface",
-                surface_id=f"pyStadt_roof_{id}_{i}",
-            )
-            geometry.add_surface(roofSurface)
+                standIn = [c1, c0]
+        roofCrds = [
+            sH_pWall_list[i],
+            *standIn,
+            sH_pWall_list[i + 1],
+            sH_pWall_list[i],
+        ]
+        roofSurface = SurfaceGML(
+            np.array(roofCrds).flatten(),
+            surface_type="RoofSurface",
+            surface_id=f"pyStadt_roof_{id}_{i}",
+        )
+        geometry.add_surface(roofSurface)
 
 
 def add_pavilion_roof_and_walls(
-        geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float,
-        bHAbs: float, bWAbs: float
+    geometry: GeometryGML,
+    id: int,
+    gC2D: list[list[float]],
+    gSH: float,
+    bHAbs: float,
+    bWAbs: float,
 ):
     """create a pavilion roof and walls from a list of coordinates
 
@@ -546,9 +561,9 @@ def add_pavilion_roof_and_walls(
         nCrd = list(gC2D[i + 1])
         coords = [
             crd + [gSH],
-            nCrd + [gSH],
-            nCrd + [bWAbs],
             crd + [bWAbs],
+            nCrd + [bWAbs],
+            nCrd + [gSH],
             crd + [gSH],
         ]
         wallSurface = SurfaceGML(
@@ -559,14 +574,14 @@ def add_pavilion_roof_and_walls(
         geometry.add_surface(wallSurface)
 
     # calculating roof surface
-    roofCenter = cO.calc_center(gC2D[0:-1])
+    roofCenter = cO.calc_center([list(i) for i in gC2D[:-1]])
 
     for i in range(4):
         roofCrds = [
-            gC2D[i] + [bWAbs],
-            gC2D[i + 1] + [bWAbs],
+            list(gC2D[i]) + [bWAbs],
             roofCenter + [bHAbs],
-            gC2D[i] + [bWAbs],
+            list(gC2D[i + 1]) + [bWAbs],
+            list(gC2D[i]) + [bWAbs],
         ]
         roofSurface = SurfaceGML(
             np.array(roofCrds).flatten(),

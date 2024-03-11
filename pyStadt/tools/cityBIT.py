@@ -59,11 +59,13 @@ def create_LoD2_building(
         surface_type="GroundSurface",
         surface_id=f"pyStadt_ground_{id}",
     )
-    # if groundSurface.isSufrace == False:
-    #     raise ValueError("groundSurface must span a surface in 3D space")
-    if groundSurface.surface_tilt == 180:
+    if groundSurface.isSurface is False:
+        raise ValueError("groundSurface must span a surface in 3D space")
+    if all(groundSurface.normal_uni == [0, 0, -1]) is False:
+        # print(groundSurface.normal_uni)
+        groundsCoordinates3D.reverse()
         groundSurface = SurfaceGML(
-            np.array(groundsCoordinates[::-1]).flatten(),
+            np.array(groundsCoordinates3D).flatten(),
             surface_type="GroundSurface",
             surface_id=f"pyStadt_ground_{id}",
         )
@@ -96,6 +98,11 @@ def create_LoD2_building(
             raise ValueError("roofHeight must be specified for roofType 1070")
         elif roofHeight < 0:
             raise ValueError("roofHeight must be positive and greater than 0")
+        elif roofHeight > buildingHeight:
+            raise ValueError(
+                "roofHeight must be smaller than buildingHeight (from lowest point to"
+                + " highest point)"
+            )
         if roofType == "1070":
             # pavilion roof
             if roofOrientation is not None:
@@ -109,7 +116,9 @@ def create_LoD2_building(
                 raise ValueError(
                     f"groundSurface must be a rectangle for roofType {roofType}"
                 )
-            if roofOrientation is None and roofType != "1040":
+            if roofType == "1040":
+                pass
+            elif roofOrientation is None:
                 raise ValueError(
                     f"roofOrientation must be specified for roofType {roofType}"
                 )
@@ -153,5 +162,7 @@ def create_LoD2_building(
 
         elif roofType == "1070":
             cBU.add_pavilion_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs)
+
+    building.measuredHeight = buildingHeight
 
     return building
