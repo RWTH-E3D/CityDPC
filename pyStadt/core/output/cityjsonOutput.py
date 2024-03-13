@@ -153,7 +153,7 @@ def __create_cityobjects_dict(
     transformOld: dict,
     transfromNew: dict,
     vertices: list[list[float]],
-) -> (dict, list[list[float]]):
+) -> tuple[dict, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters
@@ -196,7 +196,7 @@ def __create_cityobject_dict(
     transformOld: dict,
     transformNew: dict,
     vertices: list[list[float]],
-) -> (dict, list[list[float]]):
+) -> tuple[dict, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters
