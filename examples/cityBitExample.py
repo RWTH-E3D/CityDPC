@@ -72,4 +72,4 @@ building = cityBIT.create_LoD2_building(bId5,
 newDataset.buildings[bId5] = building
 
 
-cityjsonOutput.write_cityjson_file(newDataset, "examples/files/cityjsonOutputExample.json")
+cityjsonOutput.write_cityjson_file(newDataset, "examples/files/cityBITExample.json")

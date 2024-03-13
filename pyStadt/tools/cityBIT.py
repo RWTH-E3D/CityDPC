@@ -146,16 +146,19 @@ def create_LoD2_building(
     elif roofType in ["1010", "1020", "1030", "1040", "1070"]:
         bWAbs = bHAbs - roofHeight
         if roofType == "1010":
-            cBU.add_monopitch_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs,
-                                             roofOrientation)
+            cBU.add_monopitch_roof_and_walls(
+                geometry, id, gC2D, gSH, bHAbs, bWAbs, roofOrientation
+            )
 
         elif roofType == "1020":
-            cBU.add_dualpent_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs,
-                                            roofOrientation, roofHeight)
+            cBU.add_dualpent_roof_and_walls(
+                geometry, id, gC2D, gSH, bHAbs, bWAbs, roofOrientation, roofHeight
+            )
 
         elif roofType == "1030":
-            cBU.add_gabled_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs,
-                                          roofOrientation)
+            cBU.add_gabled_roof_and_walls(
+                geometry, id, gC2D, gSH, bHAbs, bWAbs, roofOrientation
+            )
 
         elif roofType == "1040":
             cBU.add_hipped_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs)
