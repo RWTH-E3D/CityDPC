@@ -26,7 +26,7 @@ def load_buildings_from_json_file(
     ignoreRefSytem: bool = False,
     dontTransform: bool = False,
     ignoreExistingTransform: bool = False,
-):
+) -> None:
     """adds buldings from filepath to dataset
 
     Parameters
@@ -370,7 +370,7 @@ def _add_cityjson_surface_to_building(
 
 def _get_semantic_surface_info(
     semantics: dict, depthInfo: list[float]
-) -> [str | None, str | None]:
+) -> list[str | None, str | None]:
     """gets semantic surface information from semantics
 
     Parameters
