@@ -129,7 +129,9 @@ def load_buildings_from_xml_file(
         for building_E in buildings_in_com:
             building_id = building_E.attrib["{http://www.opengis.net/gml}id"]
             new_building = Building(building_id)
-            _load_building_information_from_xml(building_E, nsmap, new_building)
+            _load_building_information_from_xml(
+                building_E, nsmap, new_building, cityGMLversion
+            )
 
             bps_in_bldg = building_E.findall(
                 "bldg:consistsOfBuildingPart/bldg:BuildingPart", nsmap
@@ -234,7 +236,10 @@ def _load_address_info_from_xml(
 
 
 def _load_building_information_from_xml(
-    buildingElement: ET.Element, nsmap: dict, building: AbstractBuilding
+    buildingElement: ET.Element,
+    nsmap: dict,
+    building: AbstractBuilding,
+    cityGMLversion: str,
 ):
     """loads building information from xml element
 
@@ -246,43 +251,54 @@ def _load_building_information_from_xml(
         namespace map of the root xml/gml file in form of a dicitionary
     building : AbstractBuilding
         either Building or BuildingPart object to add info to
+    cityGMLversion : str
+        version of the CityGML file
     """
-    _get_building_surfaces_from_xml_element(building, buildingElement, nsmap)
+    _get_building_surfaces_from_xml_element(
+        building, buildingElement, nsmap, cityGMLversion
+    )
 
-    _get_building_attributes_from_xml_element(building, buildingElement, nsmap)
+    _get_building_attributes_from_xml_element(
+        building, buildingElement, nsmap, cityGMLversion
+    )
 
-    lodNTI_E = buildingElement.find("bldg:lod2TerrainIntersection", nsmap)
-    if lodNTI_E is None:
-        lodNTI_E = buildingElement.find("bldg:lod1TerrainIntersection", nsmap)
-    if lodNTI_E is not None:
-        building.terrainIntersections = []
-        curveMember_Es = lodNTI_E.findall(".//gml:curveMember", nsmap)
-        for curve_E in curveMember_Es:
-            building.terrainIntersections.append(
-                _get_polygon_coordinates_from_element(curve_E, nsmap)
+    if cityGMLversion in ["1.0", "2.0"]:
+        lodNTI_E = buildingElement.find("bldg:lod2TerrainIntersection", nsmap)
+        if lodNTI_E is None:
+            lodNTI_E = buildingElement.find("bldg:lod1TerrainIntersection", nsmap)
+        if lodNTI_E is not None:
+            building.terrainIntersections = []
+            curveMember_Es = lodNTI_E.findall(".//gml:curveMember", nsmap)
+            for curve_E in curveMember_Es:
+                building.terrainIntersections.append(
+                    _get_polygon_coordinates_from_element(curve_E, nsmap)
+                )
+
+        extRef_E = buildingElement.find("core:externalReference", nsmap)
+        if extRef_E is not None:
+            building.extRef_infromationsSystem = _get_text_of_xml_element(
+                extRef_E, nsmap, "core:informationSystem"
             )
-
-    extRef_E = buildingElement.find("core:externalReference", nsmap)
-    if extRef_E is not None:
-        building.extRef_infromationsSystem = _get_text_of_xml_element(
-            extRef_E, nsmap, "core:informationSystem"
-        )
-        extObj_E = extRef_E.find("core:externalObject", nsmap)
-        if extObj_E is not None:
-            building.extRef_objName = _get_text_of_xml_element(
-                extObj_E, nsmap, "core:name"
-            )
+            extObj_E = extRef_E.find("core:externalObject", nsmap)
+            if extObj_E is not None:
+                building.extRef_objName = _get_text_of_xml_element(
+                    extObj_E, nsmap, "core:name"
+                )
 
     building._calc_roof_volume()
     building.create_legacy_surface_dicts()
 
     address_E = buildingElement.find("bldg:address/core:Address", nsmap)
-    if address_E is not None:
-        _load_address_info_from_xml(building.address, address_E, nsmap)
+    if cityGMLversion in ["1.0", "2.0"]:
+        if address_E is not None:
+            _load_address_info_from_xml(building.address, address_E, nsmap)
 
 
 def _get_building_attributes_from_xml_element(
-    building: AbstractBuilding, buildingElement: ET.Element, nsmap: dict
+    building: AbstractBuilding,
+    buildingElement: ET.Element,
+    nsmap: dict,
+    cityGMLversion: str,
 ) -> None:
     """loads building attributes from xml Element
 
@@ -294,46 +310,59 @@ def _get_building_attributes_from_xml_element(
         either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary
+    cityGMLversion : str
+        version of the CityGML file
     """
 
-    building.creationDate = _get_text_of_xml_element(
-        buildingElement, nsmap, "core:creationDate"
-    )
+    if cityGMLversion in ["1.0", "2.0"]:
+        building.creationDate = _get_text_of_xml_element(
+            buildingElement, nsmap, "core:creationDate"
+        )
 
-    genStrings = buildingElement.findall("gen:stringAttribute", nsmap)
-    for i in genStrings:
-        key = i.attrib["name"]
-        building.genericStrings[key] = _get_text_of_xml_element(i, nsmap, "gen:value")
+        genStrings = buildingElement.findall("gen:stringAttribute", nsmap)
+        for i in genStrings:
+            key = i.attrib["name"]
+            building.genericStrings[key] = _get_text_of_xml_element(
+                i, nsmap, "gen:value"
+            )
 
-    building.function = _get_text_of_xml_element(
-        buildingElement, nsmap, "bldg:function"
-    )
-    building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
-    building.yearOfConstruction = _get_int_of_xml_element(
-        buildingElement, nsmap, "bldg:yearOfConstruction"
-    )
-    building.roofType = _get_text_of_xml_element(
-        buildingElement, nsmap, "bldg:roofType"
-    )
-    building.measuredHeight = _get_float_of_xml_element(
-        buildingElement, nsmap, "bldg:measuredHeight"
-    )
-    building.storeysAboveGround = _get_int_of_xml_element(
-        buildingElement, nsmap, "bldg:storeysAboveGround"
-    )
-    building.storeyHeightsAboveGround = _get_float_of_xml_element(
-        buildingElement, nsmap, "bldg:storeyHeightsAboveGround"
-    )
-    building.storeysBelowGround = _get_int_of_xml_element(
-        buildingElement, nsmap, "bldg:storeysBelowGround"
-    )
-    building.storeyHeightsBelowGround = _get_float_of_xml_element(
-        buildingElement, nsmap, "bldg:storeyHeightsBelowGround"
-    )
+        building.function = _get_text_of_xml_element(
+            buildingElement, nsmap, "bldg:function"
+        )
+        building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
+        building.yearOfConstruction = _get_int_of_xml_element(
+            buildingElement, nsmap, "bldg:yearOfConstruction"
+        )
+        building.roofType = _get_text_of_xml_element(
+            buildingElement, nsmap, "bldg:roofType"
+        )
+        building.measuredHeight = _get_float_of_xml_element(
+            buildingElement, nsmap, "bldg:measuredHeight"
+        )
+        building.storeysAboveGround = _get_int_of_xml_element(
+            buildingElement, nsmap, "bldg:storeysAboveGround"
+        )
+        building.storeyHeightsAboveGround = _get_float_of_xml_element(
+            buildingElement, nsmap, "bldg:storeyHeightsAboveGround"
+        )
+        building.storeysBelowGround = _get_int_of_xml_element(
+            buildingElement, nsmap, "bldg:storeysBelowGround"
+        )
+        building.storeyHeightsBelowGround = _get_float_of_xml_element(
+            buildingElement, nsmap, "bldg:storeyHeightsBelowGround"
+        )
+
+    elif cityGMLversion in ["3.0"]:
+        pass
+    else:
+        logger.error(f"CityGML version {cityGMLversion} not supported")
 
 
 def _get_building_surfaces_from_xml_element(
-    building: AbstractBuilding, element: ET.Element, nsmap: dict
+    building: AbstractBuilding,
+    element: ET.Element,
+    nsmap: dict,
+    cityGMLversion: str,
 ) -> None:
     """gathers surfaces from element and categories them
 
@@ -345,109 +374,207 @@ def _get_building_surfaces_from_xml_element(
         either <bldg:Building> or <bldg:BuildingPart> lxml.etree element
     nsmap : dict
        namespace map of the root xml/gml file in form of a dicitionary
+    cityGMLversion : str
+        version of the CityGML file
     """
 
-    # check if building is LoD0
-    lod0FootPrint_E = element.find("bldg:lod0FootPrint", nsmap)
-    lod0RoofEdge_E = element.find("bldg:lod0RoofEdge", nsmap)
-    if lod0FootPrint_E is not None or lod0RoofEdge_E is not None:
-        if lod0FootPrint_E is not None:
-            geometry = GeometryGML("MultiSurface", building.gml_id, 0)
-            geomKey = building.add_geometry(geometry)
-            poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
-            poly_id = _get_attrib_of_xml_element(
-                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
-            )
-            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            ground_id = poly_id if poly_id else "pyStadt_poly_0"
-            newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
-            if newSurface.isSurface:
-                geometry.add_surface(newSurface)
-            else:
-                building.remove_geometry(geomKey)
-                building._warn_invalid_surface(ground_id)
+    if cityGMLversion in ["1.0", "2.0"]:
+        # check if building is LoD0
+        lod0FootPrint_E = element.find("bldg:lod0FootPrint", nsmap)
+        lod0RoofEdge_E = element.find("bldg:lod0RoofEdge", nsmap)
+        if lod0FootPrint_E is not None or lod0RoofEdge_E is not None:
+            building.lod = "0"
+            if lod0FootPrint_E is not None:
+                geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+                geomKey = building.add_geometry(geometry)
+                poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
+                poly_id = _get_attrib_of_xml_element(
+                    poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+                )
+                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                ground_id = poly_id if poly_id else "pyStadt_poly_0"
+                newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
+                if newSurface.isSurface:
+                    geometry.add_surface(newSurface)
+                else:
+                    building.remove_geometry(geomKey)
+                    building._warn_invalid_surface(ground_id)
 
-        if lod0RoofEdge_E is not None:
-            geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+            if lod0RoofEdge_E is not None:
+                geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+                geomKey = building.add_geometry(geometry)
+                poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
+                poly_id = _get_attrib_of_xml_element(
+                    poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+                )
+                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                roof_id = poly_id if poly_id else "pyStadt_poly_0"
+                newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
+                if newSurface.isSurface:
+                    building.remove_geometry(geomKey)
+                    building._warn_invalid_surface(roof_id)
+
+            return
+
+        # check if building is LoD1
+        lod1Solid_E = element.find("bldg:lod1Solid", nsmap)
+        if lod1Solid_E is not None:
+            building.lod = "1"
+            # get all polygons and extract their coordinates
+            geometry = GeometryGML("Solid", building.gml_id, 1)
             geomKey = building.add_geometry(geometry)
-            poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
-            poly_id = _get_attrib_of_xml_element(
-                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
-            )
-            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            roof_id = poly_id if poly_id else "pyStadt_poly_0"
-            newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
-            if newSurface.isSurface:
-                building.remove_geometry(geomKey)
-                building._warn_invalid_surface(roof_id)
+
+            poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
+            for i, poly_E in enumerate(poly_Es):
+                poly_id = _get_attrib_of_xml_element(
+                    poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+                )
+                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                newSurface = SurfaceGML(coordinates, poly_id)
+                if newSurface.isSurface:
+                    geometry.add_surface(newSurface)
+                else:
+                    building._warn_invalid_surface(poly_id)
+
+        # everything greater than LoD1
+        solid_E = element.find("bldg:lod2Solid", nsmap)
+        listOfSurfaceMembers = []
+        if solid_E is not None:
+            geometry = GeometryGML("Solid", building.gml_id, 2)
+            geomKey = building.add_geometry(geometry)
+            for sM in solid_E.findall(".//gml:surfaceMember", nsmap):
+                listOfSurfaceMembers.append(
+                    sM.attrib["{http://www.w3.org/1999/xlink}href"]
+                )
+            # do something with this list of solid memebers
+        else:
+            geometry = GeometryGML("MultiSurface", building.gml_id, 2)
+            geomKey = building.add_geometry(geometry)
+
+        building.lod = "2"
+
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "bldg:boundedBy/bldg:WallSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "bldg:boundedBy/bldg:RoofSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "bldg:boundedBy/bldg:GroundSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "bldg:boundedBy/bldg:ClosureSurface",
+            geometry,
+        )
 
         return
 
-    # check if building is LoD1
-    lod1Solid_E = element.find("bldg:lod1Solid", nsmap)
-    if lod1Solid_E is not None:
-        # get all polygons and extract their coordinates
-        geometry = GeometryGML("Solid", building.gml_id, 1)
-        geomKey = building.add_geometry(geometry)
+    elif cityGMLversion in ["3.0"]:
+        # check if building is LoD0
+        lod0MultiSurface = element.find("lod0MultiSurface", nsmap)
+        if lod0MultiSurface is not None:
+            building.lod = "0"
+            geometry = GeometryGML("MultiSurface", building.gml_id, 0)
+            geomKey = building.add_geometry(geometry)
+            poly_Es = lod0MultiSurface.findall(".//gml:Polygon", nsmap)
+            for i, poly_E in enumerate(poly_Es):
+                poly_id = _get_attrib_of_xml_element(
+                    poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+                )
+                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                newSurface = SurfaceGML(coordinates, poly_id)
+                if newSurface.isSurface:
+                    geometry.add_surface(newSurface)
+                else:
+                    building._warn_invalid_surface(poly_id)
+            return
 
-        building.lod = "1"
-        poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
-        for i, poly_E in enumerate(poly_Es):
-            poly_id = _get_attrib_of_xml_element(
-                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
-            )
-            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-            poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
-            newSurface = SurfaceGML(coordinates, poly_id)
-            if newSurface.isSurface:
-                geometry.add_surface(newSurface)
-            else:
-                building._warn_invalid_surface(poly_id)
+        # check if building is LoD1
+        lod1Solid_E = element.find("lod1Solid", nsmap)
+        if lod1Solid_E is not None:
+            building.lod = "1"
+            # get all polygons and extract their coordinates
+            geometry = GeometryGML("Solid", building.gml_id, 1)
+            geomKey = building.add_geometry(geometry)
 
-    # everything greater than LoD1
-    solid_E = element.find("bldg:lod2Solid", nsmap)
-    listOfSurfaceMembers = []
-    if solid_E is not None:
-        geometry = GeometryGML("Solid", building.gml_id, 2)
-        geomKey = building.add_geometry(geometry)
-        for sM in solid_E.findall(".//gml:surfaceMember", nsmap):
-            listOfSurfaceMembers.append(sM.attrib["{http://www.w3.org/1999/xlink}href"])
-        # do something with this list of solid memebers
+            poly_Es = lod1Solid_E.findall(".//gml:Polygon", nsmap)
+            for i, poly_E in enumerate(poly_Es):
+                poly_id = _get_attrib_of_xml_element(
+                    poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+                )
+                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                newSurface = SurfaceGML(coordinates, poly_id)
+                if newSurface.isSurface:
+                    geometry.add_surface(newSurface)
+                else:
+                    building._warn_invalid_surface(poly_id)
+            return
+
+        # everything greater than LoD1
+        solid_E = element.find("lod2Solid", nsmap)
+        if solid_E is not None:
+            geometry = GeometryGML("Solid", building.gml_id, 2)
+            geomKey = building.add_geometry(geometry)
+            for sM in solid_E.findall(".//gml:surfaceMember", nsmap):
+                listOfSurfaceMembers.append(
+                    sM.attrib["{http://www.w3.org/1999/xlink}href"]
+                )
+            # do something with this list of solid memebers
+        else:
+            geometry = GeometryGML("MultiSurface", building.gml_id, 2)
+            geomKey = building.add_geometry(geometry)
+
+        building.lod = "2"
+
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "boundary/con:WallSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "boundary/con:RoofSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "boundary/con:GroundSurface",
+            geometry,
+        )
+        _add_surface_from_element(
+            building,
+            element,
+            nsmap,
+            "boundary/con:ClosureSurface",
+            geometry,
+        )
+        return
     else:
-        geometry = GeometryGML("MultiSurface", building.gml_id, 2)
-        geomKey = building.add_geometry(geometry)
-
-    _add_surface_from_element(
-        building,
-        element,
-        nsmap,
-        "bldg:boundedBy/bldg:WallSurface",
-        geometry,
-    )
-    _add_surface_from_element(
-        building,
-        element,
-        nsmap,
-        "bldg:boundedBy/bldg:RoofSurface",
-        geometry,
-    )
-    _add_surface_from_element(
-        building,
-        element,
-        nsmap,
-        "bldg:boundedBy/bldg:GroundSurface",
-        geometry,
-    )
-    _add_surface_from_element(
-        building,
-        element,
-        nsmap,
-        "bldg:boundedBy/bldg:ClosureSurface",
-        geometry,
-    )
-
-    building.lod = 2
-    return
+        logger.error(f"CityGML version {cityGMLversion} not supported")
 
 
 def _get_polygon_coordinates_from_element(
