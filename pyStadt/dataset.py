@@ -64,11 +64,7 @@ class Dataset:
 def join_datasets(
     left: Dataset,
     right: Dataset,
-    operation: str = "left"
-    | "leftExcludingInner"
-    | "inner"
-    | "outer"
-    | "outerExcludingInner",
+    operation: str,
 ) -> Dataset:
     """join two datasets
 
