@@ -47,6 +47,7 @@ def load_buildings_from_xml_file(
         by default False
     """
     logger.info(f"loading buildings from CityGML file {filepath}")
+    supportedCityGMLversions = ["1.0", "2.0", "3.0"]
     parser = ET.XMLParser(remove_blank_text=True)
     tree = ET.parse(filepath, parser)
     root = tree.getroot()
@@ -59,6 +60,8 @@ def load_buildings_from_xml_file(
 
     # get CityGML version
     cityGMLversion = nsmap["core"].rsplit("/", 1)[-1]
+    if cityGMLversion not in supportedCityGMLversions:
+        raise ValueError(f"CityGML version {cityGMLversion} not supported") 
 
     # checking for ADEs
     ades = []
@@ -235,6 +238,39 @@ def _load_address_info_from_xml(
     )
 
 
+def _load_address_info_From_xml_3_0(
+    address: CoreAddress, addressElement: ET.Element, nsmap: dict
+) -> None:
+    """loads address info from an <core:Address> element and adds it to the
+    address object for CityGML version 3.0
+
+    Parameters
+    ----------
+    address : CoreAddress
+        address object to add data to
+    addressElement : ET.Element
+        <core:Address> lxml.etree element
+    nsmap : dict
+        namespace map of the root xml/gml file in form of a dicitionary
+    """
+
+    address.localityName = _get_text_of_xml_element(
+        addressElement, nsmap, ".//xAL:Locality/xAL:NameElement"
+    )
+
+    address.thoroughfareName = _get_text_of_xml_element(
+        addressElement, nsmap, ".//xAL:Thoroughfare/xAL:NameElement"
+    )
+
+    address.thoroughfareNumber = _get_text_of_xml_element(
+        addressElement, nsmap, ".//xAL:Thoroughfare/xAL:Number"
+    )
+
+    address.postalCodeNumber = _get_text_of_xml_element(
+        addressElement, nsmap, ".//xAL:PostCode/xAL:Identifier"
+    )
+
+
 def _load_building_information_from_xml(
     buildingElement: ET.Element,
     nsmap: dict,
@@ -292,6 +328,9 @@ def _load_building_information_from_xml(
     if cityGMLversion in ["1.0", "2.0"]:
         if address_E is not None:
             _load_address_info_from_xml(building.address, address_E, nsmap)
+    elif cityGMLversion in ["3.0"]:
+        if address_E is not None:
+            _load_address_info_From_xml_3_0(building.address, address_E, nsmap)
 
 
 def _get_building_attributes_from_xml_element(
@@ -314,6 +353,27 @@ def _get_building_attributes_from_xml_element(
         version of the CityGML file
     """
 
+    building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
+
+    building.function = _get_text_of_xml_element(
+        buildingElement, nsmap, "bldg:function"
+    )
+    building.roofType = _get_text_of_xml_element(
+        buildingElement, nsmap, "bldg:roofType"
+    )
+    building.storeysAboveGround = _get_int_of_xml_element(
+        buildingElement, nsmap, "bldg:storeysAboveGround"
+    )
+    building.storeyHeightsAboveGround = _get_float_of_xml_element(
+        buildingElement, nsmap, "bldg:storeyHeightsAboveGround"
+    )
+    building.storeysBelowGround = _get_int_of_xml_element(
+        buildingElement, nsmap, "bldg:storeysBelowGround"
+    )
+    building.storeyHeightsBelowGround = _get_float_of_xml_element(
+        buildingElement, nsmap, "bldg:storeyHeightsBelowGround"
+    )
+
     if cityGMLversion in ["1.0", "2.0"]:
         building.creationDate = _get_text_of_xml_element(
             buildingElement, nsmap, "core:creationDate"
@@ -326,34 +386,20 @@ def _get_building_attributes_from_xml_element(
                 i, nsmap, "gen:value"
             )
 
-        building.function = _get_text_of_xml_element(
-            buildingElement, nsmap, "bldg:function"
-        )
-        building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
         building.yearOfConstruction = _get_int_of_xml_element(
             buildingElement, nsmap, "bldg:yearOfConstruction"
-        )
-        building.roofType = _get_text_of_xml_element(
-            buildingElement, nsmap, "bldg:roofType"
         )
         building.measuredHeight = _get_float_of_xml_element(
             buildingElement, nsmap, "bldg:measuredHeight"
         )
-        building.storeysAboveGround = _get_int_of_xml_element(
-            buildingElement, nsmap, "bldg:storeysAboveGround"
-        )
-        building.storeyHeightsAboveGround = _get_float_of_xml_element(
-            buildingElement, nsmap, "bldg:storeyHeightsAboveGround"
-        )
-        building.storeysBelowGround = _get_int_of_xml_element(
-            buildingElement, nsmap, "bldg:storeysBelowGround"
-        )
-        building.storeyHeightsBelowGround = _get_float_of_xml_element(
-            buildingElement, nsmap, "bldg:storeyHeightsBelowGround"
-        )
-
     elif cityGMLversion in ["3.0"]:
-        pass
+        if height_E := buildingElement.find("con:height", nsmap):
+            if height2_E := height_E.find("con:Height", nsmap):
+                if highRef_E := height2_E.find("con:heightReference", nsmap) and highRef_E.text == "highestRoofEdge" and lowRef_E := height2_E.find("con:heightReference", nsmap) and lowRef_E.text == "lowestRoofEdge":
+                    building.measuredHeight = _get_float_of_xml_element(
+                        height2_E, nsmap, "con:value"
+                    )
+
     else:
         logger.error(f"CityGML version {cityGMLversion} not supported")
 
