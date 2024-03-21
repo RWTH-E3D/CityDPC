@@ -26,7 +26,7 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
     filename : str
         new filename (including path if wanted)
     version : str
-        CityGML version - either "1.0" or "2.0"
+        CityGML version - either "1.0", "2.0" or "3.0"
     """
 
     if dataset.srsName is None:
@@ -37,29 +37,21 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
         nClass = citygmlClasses.CGML1
     elif version == "2.0":
         nClass = citygmlClasses.CGML2
+    elif version == "3.0":
+        nClass = citygmlClasses.CGML3
     else:
-        return
+        raise ValueError(f"CityGML version {version} is not supported")
 
     # creating new namespacemap
-    newNSmap = {
-        # None: nClass.core,
-        "core": nClass.core,
-        "gen": nClass.gen,
-        "grp": nClass.grp,
-        "app": nClass.app,
-        "bldg": nClass.bldg,
-        "gml": nClass.gml,
-        "xal": nClass.xal,
-        "xlink": nClass.xlink,
-        "xsi": nClass.xsi,
-    }
+    newNSmap = nClass.__dict__
 
     # creating new root element
     nroot_E = ET.Element(ET.QName(nClass.core, "CityModel"), nsmap=newNSmap)
 
     # creating name element
     name_E = ET.SubElement(
-        nroot_E, ET.QName(nClass.gml, "name"), nsmap={"gml": nClass.gml}
+        nroot_E,
+        ET.QName(nClass.gml, "name"),
     )
     name_E.text = "created using the e3D pyStadt"
 
@@ -116,6 +108,7 @@ def _add_building_to_cityModel_xml(
     building: AbstractBuilding,
     parent_E: ET.Element,
     nClass: citygmlClasses.CGML0,
+    version: str = "2.0",
 ) -> ET.Element:
     """adds a building or buildingPart to a cityModel
 
@@ -129,6 +122,8 @@ def _add_building_to_cityModel_xml(
         direct parent element (either cityObjectMember or consistsOfBuildingPart)
     nClass : xmlClasses.CGML0
         namespace class
+    version : str
+        CityGML version - either "1.0", "2.0" or "3.0"
 
 
     Returns
@@ -150,69 +145,113 @@ def _add_building_to_cityModel_xml(
             attrib={ET.QName(nClass.gml, "id"): building.gml_id},
         )
 
-    if building.creationDate is not None:
-        ET.SubElement(
-            building_E, ET.QName(nClass.core, "creationDate")
-        ).text = building.creationDate
+    if version in ["1.0", "2.0"]:
+        if building.creationDate is not None:
+            ET.SubElement(
+                building_E, ET.QName(nClass.core, "creationDate")
+            ).text = building.creationDate
 
-    if (
-        building.extRef_infromationsSystem is not None
-        and building.extRef_objName is not None
-    ):
-        extRef_E = ET.SubElement(building_E, ET.QName(nClass.core, "externalReference"))
-        ET.SubElement(
-            extRef_E, ET.QName(nClass.core, "informationSystem")
-        ).text = building.extRef_infromationsSystem
-        extObj_E = ET.SubElement(extRef_E, ET.QName(nClass.core, "externalObject"))
-        ET.SubElement(
-            extObj_E, ET.QName(nClass.core, "name")
-        ).text = building.extRef_objName
+        if (
+            building.extRef_infromationsSystem is not None
+            and building.extRef_objName is not None
+        ):
+            extRef_E = ET.SubElement(
+                building_E, ET.QName(nClass.core, "externalReference")
+            )
+            ET.SubElement(
+                extRef_E, ET.QName(nClass.core, "informationSystem")
+            ).text = building.extRef_infromationsSystem
+            extObj_E = ET.SubElement(extRef_E, ET.QName(nClass.core, "externalObject"))
+            ET.SubElement(
+                extObj_E, ET.QName(nClass.core, "name")
+            ).text = building.extRef_objName
 
-    for key, value in building.genericStrings.items():
-        newGenStr_E = ET.SubElement(
-            building_E, ET.QName(nClass.gen, "stringAttribute"), name=key
+        for key, value in building.genericStrings.items():
+            newGenStr_E = ET.SubElement(
+                building_E, ET.QName(nClass.gen, "stringAttribute"), name=key
+            )
+            ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = value
+
+    elif version == "3.0":
+        building_E = _add_building_to_cityModel_xml_3_0(
+            dataset, building, building_E, nClass
         )
-        ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = value
 
     if building.function is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "function")
         ).text = building.function
 
-    if building.yearOfConstruction is not None:
-        ET.SubElement(
-            building_E, ET.QName(nClass.bldg, "yearOfConstruction")
-        ).text = str(building.yearOfConstruction)
+    if version in ["1.0", "2.0"]:
+        if building.yearOfConstruction is not None:
+            ET.SubElement(
+                building_E, ET.QName(nClass.bldg, "yearOfConstruction")
+            ).text = str(building.yearOfConstruction)
 
     if building.roofType is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "roofType")
         ).text = building.roofType
 
-    if building.measuredHeight is not None:
-        ET.SubElement(
-            building_E, ET.QName(nClass.bldg, "measuredHeight"), uom="urn:adv:uom:m"
-        ).text = str(building.measuredHeight)
+    if version in ["1.0", "2.0"]:
+        if building.measuredHeight is not None:
+            ET.SubElement(
+                building_E, ET.QName(nClass.bldg, "measuredHeight"), uom="urn:adv:uom:m"
+            ).text = str(building.measuredHeight)
 
     if building.storeysAboveGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeysAboveGround")
         ).text = str(building.storeysAboveGround)
 
-    if building.storeyHeightsAboveGround is not None:
-        ET.SubElement(
-            building_E, ET.QName(nClass.bldg, "storeyHeightsAboveGround")
-        ).text = str(building.storeyHeightsAboveGround)
-
     if building.storeysBelowGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeysBelowGround")
         ).text = str(building.storeysBelowGround)
 
+    if building.storeyHeightsAboveGround is not None:
+        ET.SubElement(
+            building_E, ET.QName(nClass.bldg, "storeyHeightsAboveGround")
+        ).text = str(building.storeyHeightsAboveGround)
+
     if building.storeyHeightsBelowGround is not None:
         ET.SubElement(
             building_E, ET.QName(nClass.bldg, "storeyHeightsBelowGround")
         ).text = str(building.storeyHeightsBelowGround)
+
+    if version in ["1.0", "2.0"]:
+        building_E = _add_building_to_cityModel_xml_1_2(
+            dataset, building, building_E, nClass
+        )
+
+    return building_E
+
+
+def _add_building_to_cityModel_xml_1_2(
+    dataset: Dataset,
+    building: AbstractBuilding,
+    building_E: ET.Element,
+    nClass: citygmlClasses.CGML0,
+) -> ET.Element:
+    """adds a building or buildingPart to a cityModel
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset for updating min max coordinates
+    building : AbstractBuilding
+        either Building or BuildingPart object
+    building_E : ET.Element
+        building xml element of building object
+    nClass : xmlClasses.CGML0
+        namespace class
+
+
+    Returns
+    -------
+    ET.Element
+        created element
+    """
 
     for i, geometry in enumerate(building.get_geometries()):
         if geometry.lod == 0:
@@ -229,6 +268,70 @@ def _add_building_to_cityModel_xml(
                     building, 2, building_E, nClass, dataset.transform
                 )
             _add_lod_2_geometry_to_xml_building(dataset, geometry, building_E, nClass)
+
+    return building_E
+
+
+def _add_building_to_cityModel_xml_3_0(
+    dataset: Dataset,
+    building: AbstractBuilding,
+    building_E: ET.Element,
+    nClass: citygmlClasses.CGML0,
+) -> ET.Element:
+    """adds a building or buildingPart to a cityModel
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset for updating min max coordinates
+    building : AbstractBuilding
+        either Building or BuildingPart object
+    building_E : ET.Element
+        building xml element of building object
+    nClass : xmlClasses.CGML0
+        namespace class
+
+
+    Returns
+    -------
+    ET.Element
+        created element
+    """
+    for i, geometry in enumerate(building.get_geometries()):
+        if geometry.lod == 0:
+            _add_lod_0_geometry_to_xml_building_3_0(
+                dataset, geometry, building_E, nClass
+            )
+        elif geometry.lod == 1:
+            if building.terrainIntersections is not None and i == 0:
+                _add_terrainIntersection_to_xml_building(
+                    building, 1, building_E, nClass, dataset.transform
+                )
+            _add_lod_1_geometry_to_xml_building(
+                dataset, geometry, building_E, nClass, "3.0"
+            )
+        elif geometry.lod == 2:
+            # TODO add terrainIntersection to lod2 for CityGML 3.0
+            # if building.terrainIntersections is not None and i == 0:
+            #     _add_terrainIntersection_to_xml_building(
+            #         building, 2, building_E, nClass, dataset.transform
+            #     )
+            _add_lod_2_geometry_to_xml_building_3_0(
+                dataset, geometry, building_E, nClass
+            )
+        if building.measuredHeight is not None:
+            height_E = ET.SubElement(building_E, ET.QName(nClass.con, "height"))
+            hEIGHT_E = ET.SubElement(height_E, ET.QName(nClass.con, "Height"))
+            ET.SubElement(
+                hEIGHT_E, ET.QName(nClass.con, "highReference")
+            ).text = "highestRoofEdge"
+            ET.SubElement(
+                hEIGHT_E, ET.QName(nClass.con, "lowReference")
+            ).text = "lowestGroundPoint"
+            ET.SubElement(hEIGHT_E, ET.QName(nClass.con, "status")).text = "measured"
+            ET.SubElement(
+                hEIGHT_E, ET.QName(nClass.con, "value"), attrib={"uom": "m"}
+            ).text = str(building.measuredHeight)
 
     return building_E
 
@@ -257,40 +360,85 @@ def _add_lod_0_geometry_to_xml_building(
         multiSurface_E = ET.SubElement(
             lodnSolid_E, ET.QName(nClass.gml, "MultiSurface")
         )
-        surfaceMember_E = ET.SubElement(
-            multiSurface_E, ET.QName(nClass.gml, "surfaceMember")
-        )
-        polygon_E = ET.SubElement(surfaceMember_E, ET.QName(nClass.gml, "Polygon"))
-        exterior_E = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
-        linearRing_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "LinearRing"))
-
-        posList_E = ET.SubElement(
-            linearRing_E,
-            ET.QName(nClass.gml, "posList"),
-            attrib={"srsDimension": "3"},
-        )
-        posList_E.text = __untransform_surface_to_str(groundSurface, dataset.transform)
-        update_min_max(dataset, groundSurface)
+        _add_surfaceMember_to_element(dataset, groundSurface, multiSurface_E, nClass)
 
     for roofSurface in geometry.get_surfaces(["RoofSurface"]):
         lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.bldg, "lod0RoofEdge"))
         multiSurface_E = ET.SubElement(
             lodnSolid_E, ET.QName(nClass.gml, "MultiSurface")
         )
-        surfaceMember_E = ET.SubElement(
-            multiSurface_E, ET.QName(nClass.gml, "surfaceMember")
-        )
-        polygon_E = ET.SubElement(surfaceMember_E, ET.QName(nClass.gml, "Polygon"))
-        exterior_E = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
-        linearRing_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "LinearRing"))
+        _add_surfaceMember_to_element(dataset, roofSurface, multiSurface_E, nClass)
 
-        posList_E = ET.SubElement(
-            linearRing_E,
-            ET.QName(nClass.gml, "posList"),
-            attrib={"srsDimension": "3"},
-        )
-        posList_E.text = __untransform_surface_to_str(roofSurface, dataset.transform)
-        update_min_max(dataset, roofSurface)
+
+def _add_lod_0_geometry_to_xml_building_3_0(
+    dataset: Dataset,
+    geometry: GeometryGML,
+    building_E: ET.Element,
+    nClass: citygmlClasses.CGML0,
+) -> None:
+    """adds lod0 geometry to an xml element
+
+    Parameters
+    ----------
+    dataset : Dataset
+        pyStadt Dataset for updating min max coordinates
+    geometry : GeometryGML
+        geometry to be added
+    building_E : ET.Element
+        direct parent element (either cityObjectMember or consistsOfBuildingPart)
+    nClass : citygmlClasses.CGML0
+        namespace class
+    """
+    if roofSurfaces := geometry.get_surfaces(["RoofSurface"]):
+        for roofSurface in roofSurfaces:
+            lod0multiSurface_E = ET.SubElement(
+                building_E, ET.QName(nClass.core, "lod0MultiSurface")
+            )
+            _add_surfaceMember_to_element(
+                dataset, roofSurface, lod0multiSurface_E, nClass
+            )
+        return
+    else:
+        for groundSurface in geometry.get_surfaces(["GroundSurface"]):
+            lod0multiSurface_E = ET.SubElement(
+                building_E, ET.QName(nClass.core, "lod0MultiSurface")
+            )
+            _add_surfaceMember_to_element(
+                dataset, groundSurface, lod0multiSurface_E, nClass
+            )
+
+
+def _add_surfaceMember_to_element(
+    dataset: Dataset,
+    surface: SurfaceGML,
+    parent_E: ET.Element,
+    nClass: citygmlClasses.CGML0,
+) -> None:
+    """adds a surface to an xml element
+
+    Parameters
+    ----------
+    dataset : Dataset
+        pyStadt Dataset for updating min max coordinates
+    surface : SurfaceGML
+        surface to be added
+    parent_E : ET.Element
+        direct parent element (either cityObjectMember or consistsOfBuildingPart)
+    nClass : citygmlClasses.CGML0
+        namespace class
+    """
+    surfaceMember_E = ET.SubElement(parent_E, ET.QName(nClass.gml, "surfaceMember"))
+    polygon_E = ET.SubElement(surfaceMember_E, ET.QName(nClass.gml, "Polygon"))
+    exterior_E = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
+    linearRing_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "LinearRing"))
+
+    posList_E = ET.SubElement(
+        linearRing_E,
+        ET.QName(nClass.gml, "posList"),
+        attrib={"srsDimension": "3"},
+    )
+    posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
+    update_min_max(dataset, surface)
 
 
 def _add_lod_1_geometry_to_xml_building(
@@ -298,6 +446,7 @@ def _add_lod_1_geometry_to_xml_building(
     geometry: GeometryGML,
     building_E: ET.Element,
     nClass: citygmlClasses.CGML0,
+    version: str = "2.0",
 ) -> None:
     """adds lod1 geometry to an xml element
 
@@ -311,29 +460,21 @@ def _add_lod_1_geometry_to_xml_building(
         direct parent element (either cityObjectMember or consistsOfBuildingPart)
     nClass : citygmlClasses.CGML0
         namespace class
+    version: str
+        CityGML version - either "1.0", "2.0" or "3.0"
     """
     lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.bldg, "lod1Solid"))
     solid_E = ET.SubElement(lodnSolid_E, ET.QName(nClass.gml, "Solid"))
     exterior_E = ET.SubElement(solid_E, ET.QName(nClass.gml, "exterior"))
-    compositeSurface_E = ET.SubElement(
-        exterior_E, ET.QName(nClass.gml, "CompositeSurface")
-    )
+    if version in ["1.0", "2.0"]:
+        compositeSurface_E = ET.SubElement(
+            exterior_E, ET.QName(nClass.gml, "CompositeSurface")
+        )
+    elif version == "3.0":
+        compositeSurface_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "Shell"))
 
     for surface in geometry.get_surfaces():
-        surfaceMember_E = ET.SubElement(
-            compositeSurface_E, ET.QName(nClass.gml, "surfaceMember")
-        )
-        polygon_E = ET.SubElement(surfaceMember_E, ET.QName(nClass.gml, "Polygon"))
-        exterior_E2 = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
-        linearRing_E = ET.SubElement(exterior_E2, ET.QName(nClass.gml, "LinearRing"))
-
-        posList_E = ET.SubElement(
-            linearRing_E,
-            ET.QName(nClass.gml, "posList"),
-            attrib={"srsDimension": "3"},
-        )
-        posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
-        update_min_max(dataset, surface)
+        _add_surfaceMember_to_element(dataset, surface, compositeSurface_E, nClass)
 
 
 def _add_lod_2_geometry_to_xml_building(
@@ -420,6 +561,89 @@ def _add_lod_2_geometry_to_xml_building(
         )
         posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
         update_min_max(dataset, surface)
+
+
+def _add_lod_2_geometry_to_xml_building_3_0(
+    dataset: Dataset,
+    geometry: GeometryGML,
+    building_E: ET.Element,
+    nClass: citygmlClasses.CGML0,
+) -> None:
+    """adds lod2 geometry to an xml element
+
+    Parameters
+    ----------
+    dataset : Dataset
+        pyStadt Dataset for updating min max coordinates
+    geometry : GeometryGML
+        geometry to be added
+    building_E : ET.Element
+        direct parent element (either cityObjectMember or consistsOfBuildingPart)
+    nClass : citygmlClasses.CGML0
+        namespace class
+    """
+    usedHrefs = []
+    for surface in geometry.get_surfaces():
+        if surface.polygon_id is not None:
+            polyID = surface.polygon_id
+        else:
+            polyID = str(uuid.uuid1())
+        if geometry.type == "Solid":
+            usedHrefs.append(f"#{polyID}")
+        boundary_E = ET.SubElement(building_E, ET.QName(nClass.core, "boundary"))
+        wallRoofGround_E = ET.SubElement(
+            boundary_E,
+            ET.QName(nClass.core, surface.surface_type),
+        )
+        if surface.surface_id is not None and not surface.surface_id.startswith(
+            "pyStadt_"
+        ):
+            wallRoofGround_E.attrib[
+                "{http://www.opengis.net/gml}id"
+            ] = surface.surface_id
+        lodnMultisurface_E = ET.SubElement(
+            wallRoofGround_E, ET.QName(nClass.bldg, "lod2MultiSurface")
+        )
+        multiSurface_E = ET.SubElement(
+            lodnMultisurface_E, ET.QName(nClass.gml, "MultiSurface")
+        )
+        surfaceMember_E = ET.SubElement(
+            multiSurface_E, ET.QName(nClass.gml, "surfaceMember")
+        )
+
+        polygon_E = ET.SubElement(
+            surfaceMember_E,
+            ET.QName(nClass.gml, "Polygon"),
+        )
+        if geometry.type == "Solid":
+            polygon_E.attrib["{http://www.opengis.net/gml}id"] = polyID
+
+        if surface.polygon_id is not None and not surface.polygon_id.startswith(
+            "pyStadt_"
+        ):
+            polygon_E.attrib["{http://www.opengis.net/gml}id"] = surface.polygon_id
+
+        exterior_E = ET.SubElement(polygon_E, ET.QName(nClass.gml, "exterior"))
+
+        linearRing_E = ET.SubElement(exterior_E, ET.QName(nClass.gml, "LinearRing"))
+        posList_E = ET.SubElement(
+            linearRing_E,
+            ET.QName(nClass.gml, "posList"),
+            attrib={"srsDimension": "3"},
+        )
+        posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
+        update_min_max(dataset, surface)
+
+    if usedHrefs:
+        lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.core, "lod2Solid"))
+        solid_E = ET.SubElement(lodnSolid_E, ET.QName(nClass.gml, "Solid"))
+        exterior_E = ET.SubElement(solid_E, ET.QName(nClass.gml, "exterior"))
+        for href in usedHrefs:
+            ET.SubElement(
+                exterior_E,
+                ET.QName(nClass.gml, "surfaceMember"),
+                attrib={ET.QName(nClass.xlink, "href"): href},
+            )
 
 
 def _add_terrainIntersection_to_xml_building(
