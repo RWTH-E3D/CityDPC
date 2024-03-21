@@ -61,7 +61,7 @@ def load_buildings_from_xml_file(
     # get CityGML version
     cityGMLversion = nsmap["core"].rsplit("/", 1)[-1]
     if cityGMLversion not in supportedCityGMLversions:
-        raise ValueError(f"CityGML version {cityGMLversion} not supported") 
+        raise ValueError(f"CityGML version {cityGMLversion} not supported")
 
     # checking for ADEs
     ades = []
@@ -395,7 +395,14 @@ def _get_building_attributes_from_xml_element(
     elif cityGMLversion in ["3.0"]:
         if height_E := buildingElement.find("con:height", nsmap):
             if height2_E := height_E.find("con:Height", nsmap):
-                if highRef_E := height2_E.find("con:heightReference", nsmap) and highRef_E.text == "highestRoofEdge" and lowRef_E := height2_E.find("con:heightReference", nsmap) and lowRef_E.text == "lowestRoofEdge":
+                if (
+                    _get_text_of_xml_element(height2_E, nsmap, "con:highReference")
+                    == "highestRoofEdge"
+                    and _get_text_of_xml_element(
+                        height2_E, nsmap, "con:heightReference"
+                    )
+                    == "lowestRoofEdge"
+                ):
                     building.measuredHeight = _get_float_of_xml_element(
                         height2_E, nsmap, "con:value"
                     )
