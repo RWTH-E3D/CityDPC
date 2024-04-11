@@ -17,6 +17,6 @@ def update_min_max(dataset: Dataset, surface: SurfaceGML):
     for point in surface.gml_surface_2array:
         for i, coordinate in enumerate(point):
             if coordinate < dataset._minimum[i]:
-                dataset._minimum[i] = coordinate
+                dataset._minimum[i] = float(coordinate)
             elif coordinate > dataset._maximum[i]:
-                dataset._maximum[i] = coordinate
+                dataset._maximum[i] = float(coordinate)

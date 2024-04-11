@@ -49,6 +49,8 @@ class CoreAddress:
             True:  building address matches restrictions
             False: building address does not match restrictions
         """
+        if self.address_is_empty() and addressRestriciton != {}:
+            return False
 
         for key, value in addressRestriciton.items():
             if key == "countryName":
@@ -73,4 +75,4 @@ class CoreAddress:
                 if self.postalCodeNumber != value:
                     return False
 
-            return True
+        return True

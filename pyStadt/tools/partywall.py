@@ -31,25 +31,25 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
         polys_in_building_0 = []
         # get coordinates from all groundSurface of building geometry
         if building_0.has_3Dgeometry():
-            for key, ground in building_0.grounds.items():
+            for groundSurface in building_0.get_surfaces(["GroundSurface"]):
                 polys_in_building_0.append(
                     {
-                        "poly_id": key,
-                        "coor": ground.gml_surface_2array,
+                        "poly_id": groundSurface.polygon_id,
+                        "coor": groundSurface.gml_surface_2array,
                         "parent": building_0,
                     }
                 )
 
         # get coordinates from all groundSurface of buildingPart geometries
         if building_0.has_building_parts():
-            for b_part in building_0.building_parts:
+            for b_part in building_0.get_building_parts():
                 if b_part.has_3Dgeometry():
-                    for key, ground in b_part.grounds.items():
+                    for groundSurface in b_part.get_surfaces(["GroundSurface"]):
                         polys_in_building_0.append(
                             {
-                                "poly_id": key,
-                                "coor": ground.gml_surface_2array,
-                                "parent": b_part,
+                                "poly_id": groundSurface.polygon_id,
+                                "coor": groundSurface.gml_surface_2array,
+                                "parent": b_part.gml_id,
                             }
                         )
 
@@ -70,7 +70,7 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
             if building_1.has_3Dgeometry():
                 for poly_0 in polys_in_building_0:
                     p_0 = _create_buffered_polygon(poly_0["coor"])
-                    for gml_id, poly_1 in building_1.grounds.items():
+                    for poly_1 in building_1.get_surfaces(["GroundSurface"]):
                         p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                         if not p_0.intersection(p_1).is_empty:
                             party_walls = _find_party_walls(
@@ -86,7 +86,7 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                     if b_part.has_3Dgeometry():
                         for poly_0 in polys_in_building_0:
                             p_0 = _create_buffered_polygon(poly_0["coor"])
-                            for gml_id, poly_1 in b_part.grounds.items():
+                            for poly_1 in b_part.get_surfaces(["GroundSurface"]):
                                 p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                                 if not p_0.intersection(p_1).is_empty:
                                     # To-Do: building (or bp) with other building part
@@ -119,12 +119,12 @@ def _find_party_walls(
     """
     np.set_printoptions(suppress=True)
     party_walls = []
-    b_0_surfaces = {**buildingLike_0.walls, **buildingLike_0.closure}
-    b_1_surfaces = {**buildingLike_1.walls, **buildingLike_1.closure}
+    b_0_surfaces = buildingLike_0.get_surfaces(["WallSurface", "ClosureSurface"])
+    b_1_surfaces = buildingLike_1.get_surfaces(["WallSurface", "ClosureSurface"])
     # b_0_normvectors = _coor_dict_to_normvector_dict(b_0_surfaces)
     # b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
-    for gml_id_0, surface_0 in b_0_surfaces.items():
-        for gml_id_1, surface_1 in b_1_surfaces.items():
+    for surface_0 in b_0_surfaces:
+        for surface_1 in b_1_surfaces:
             # consider walls if there norm vectors equal or inverse or don't differ
             # more than 15 degrees (= 0.9659 cos(rad))
             if (
@@ -137,15 +137,15 @@ def _find_party_walls(
                     surface_0.normal_uni, np.array([0, 1, 0])
                 ) or np.array_equal(surface_0.normal_uni, -np.array([0, 1, 0])):
                     # rotation not needed
-                    poly_0_rotated = b_0_surfaces[gml_id_0].gml_surface_2array
-                    poly_1_rotated = b_1_surfaces[gml_id_1].gml_surface_2array
+                    poly_0_rotated = surface_0.gml_surface_2array
+                    poly_1_rotated = surface_1.gml_surface_2array
                     rad_angle = None
-                    target_y = b_0_surfaces[gml_id_0].gml_surface_2array[0][1]
+                    target_y = surface_0.gml_surface_2array[0][1]
                     rot_point = None
                 else:
                     # needs to be rotated
-                    t_surf_0 = b_0_surfaces[gml_id_0].gml_surface_2array
-                    t_surf_1 = b_1_surfaces[gml_id_1].gml_surface_2array
+                    t_surf_0 = surface_0.gml_surface_2array
+                    t_surf_1 = surface_1.gml_surface_2array
                     # get delta in x- and y-direction for roation
                     # make sure that the vector between the 1st and 2nd point
                     # isn't [0 0 *]
@@ -215,9 +215,9 @@ def _find_party_walls(
                             party_walls.append(
                                 [
                                     id_0,
-                                    gml_id_0,
+                                    surface_0.polygon_id,
                                     id_1,
-                                    gml_id_1,
+                                    surface_1.polygon_id,
                                     intersection.area,
                                     threeD_contact,
                                 ]
@@ -235,9 +235,9 @@ def _find_party_walls(
                                     party_walls.append(
                                         [
                                             id_0,
-                                            gml_id_0,
+                                            surface_0.polygon_id,
                                             id_1,
-                                            gml_id_1,
+                                            surface_1.polygon_id,
                                             section.area,
                                             threeD_contact,
                                         ]

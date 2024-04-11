@@ -4,13 +4,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from pyStadt.dataset import Dataset
     from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from pyStadt.core.obejcts.building import Building
 
 import numpy as np
 import matplotlib.path as mplP
 import copy
 
 
-def analysis(dataset: Dataset) -> dict:
+def analysis(dataset: Dataset) -> dict[dict]:
     """general file analysis based on CityATB
 
     Parameters
@@ -21,7 +22,7 @@ def analysis(dataset: Dataset) -> dict:
     Returns
     -------
     dict
-        contains results with keys:
+        contains dict of dicts where key is filename and value is dict with keys:
         - gml_version
         - gml_name
         - crs
@@ -47,13 +48,15 @@ def analysis(dataset: Dataset) -> dict:
         buildingPart_counter = 0
         for building_id in singleFile.building_ids:
             building = dataset.buildings[building_id]
-            if building.lod not in all_LoDs:
-                all_LoDs.append(building.lod)
+            for geometry in building.get_geometries():
+                if str(geometry.lod) not in all_LoDs:
+                    all_LoDs.append(str(geometry.lod))
             if building.has_building_parts():
                 for buildingPart in building.building_parts:
                     buildingPart_counter -= -1
-                    if buildingPart.lod not in all_LoDs:
-                        all_LoDs.append(buildingPart.lod)
+                    for geometry in buildingPart.get_geometries():
+                        if str(geometry.lod) not in all_LoDs:
+                            all_LoDs.append(str(geometry.lod))
         all_LoDs.sort()
         fileResult["gml_lod"] = ", ".join(all_LoDs)
 
@@ -232,10 +235,11 @@ def _check_if_within_border(
         None:  building has no ground reference
     """
 
-    if building.grounds != {}:
-        selected_surface = list(building.grounds.values())
-    elif building.roofs != {}:
-        selected_surface = list(building.roofs.values())
+    grounds = building.get_surfaces(["GroundSurface"])
+    if len(grounds) != 0:
+        selected_surface = grounds
+    elif building.get_geometries(["RoofSurface"]) != []:
+        selected_surface = building.get_geometries(["RoofSurface"])
     else:
         return None
 
@@ -274,3 +278,46 @@ def _border_check(
         if n_border.contains_point(point):
             return True
     return False
+
+
+def check_building_for_border_and_address(
+    building: Building,
+    borderCoordinates: list[list[float]] | None,
+    addressRestriciton: dict | None,
+    border: mplP.Path | None,
+) -> bool:
+    """checks if a building is located within the border and has the given address
+
+    Parameters
+    ----------
+    building : Building
+        building to check
+    borderCordinates : list[list[float]], optional
+        2D array of 2D coordinates
+    addressRestriciton : dict, optional
+        key: value pair of CoreAddress attribute and wanted value
+    border : mplP.Path, optional
+        borderCoordinates as a matplotlib.path.Path
+
+    Returns
+    -------
+    bool
+        True if building is located within border and has the given address
+    """
+    if borderCoordinates is None and addressRestriciton is None:
+        return True
+
+    if borderCoordinates is not None and border is None:
+        border = mplP.Path(np.array(borderCoordinates))
+
+    if border is not None:
+        res_coor = check_if_building_in_coordinates(building, borderCoordinates, border)
+
+    if not building.address.address_is_empty():
+        res_addr = building.address.check_address(addressRestriciton)
+
+    if border is not None and addressRestriciton is None:
+        return res_coor
+    elif border is None and addressRestriciton is not None:
+        return res_addr
+    return res_coor and res_addr
