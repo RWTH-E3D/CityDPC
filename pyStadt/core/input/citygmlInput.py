@@ -98,6 +98,8 @@ def load_buildings_from_xml_file(
                     "Trying to add file with differenet transform object than "
                     + "dataset. Either transform or forceIgnore the transformation"
                 )
+    elif ignoreRefSystem:
+        logger.info("No gml:Envelope found, but ignoring.")
     else:
         logger.error(
             "Unable to load file! Can't find gml:Envelope for srsName defenition"
