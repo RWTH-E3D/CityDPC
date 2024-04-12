@@ -111,7 +111,11 @@ def search_dataset(
         border = None
 
     for file in newDataset._files:
-        if border is not None:
+        if (
+            border is not None
+            and file.lowerCorner is not None
+            and file.upperCorner is not None
+        ):
             [x0, y0] = file.lowerCorner
             [x1, y1] = file.upperCorner
             fileEnvelopeCoor = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]

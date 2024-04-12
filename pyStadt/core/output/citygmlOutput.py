@@ -43,7 +43,8 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
         raise ValueError(f"CityGML version {version} is not supported")
 
     # creating new namespacemap
-    newNSmap = nClass.__dict__
+    newNSmap = dict(nClass.__dict__)
+    del newNSmap["__doc__"]
 
     # creating new root element
     nroot_E = ET.Element(ET.QName(nClass.core, "CityModel"), nsmap=newNSmap)

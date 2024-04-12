@@ -70,6 +70,7 @@ def load_buildings_from_xml_file(
             ades.append("energyADE")
 
     # find gml envelope and check for compatability
+    fileSRSName = None
     envelope_E = root.find("gml:boundedBy/gml:Envelope", nsmap)
     if envelope_E is not None:
         fileSRSName = envelope_E.attrib["srsName"]
@@ -107,6 +108,8 @@ def load_buildings_from_xml_file(
         return
 
     # creating border for coordinate restriction
+    lowerCorner = None
+    upperCorner = None
     if borderCoordinates is not None:
         if len(borderCoordinates) > 2:
             border = mplP.Path(np.array(borderCoordinates))
@@ -144,7 +147,9 @@ def load_buildings_from_xml_file(
             for bp_E in bps_in_bldg:
                 bp_id = bp_E.attrib["{http://www.opengis.net/gml}id"]
                 new_building_part = BuildingPart(bp_id, building_id)
-                _load_building_information_from_xml(bp_E, nsmap, new_building_part)
+                _load_building_information_from_xml(
+                    bp_E, nsmap, new_building_part, cityGMLversion
+                )
                 new_building.building_parts.append(new_building_part)
 
             if building_id in dataset.buildings.keys():
