@@ -62,7 +62,6 @@ def create_LoD2_building(
     if groundSurface.isSurface is False:
         raise ValueError("groundSurface must span a surface in 3D space")
     if all(groundSurface.normal_uni == [0, 0, -1]) is False:
-        # print(groundSurface.normal_uni)
         groundsCoordinates3D.reverse()
         groundSurface = SurfaceGML(
             np.array(groundsCoordinates3D).flatten(),

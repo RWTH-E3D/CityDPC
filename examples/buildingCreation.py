@@ -53,12 +53,12 @@ building = cityBIT.create_LoD2_building(bId4,
                                          [294420, 5628940],
                                          [294410, 5628940]],
                                         160, 10, "1040", 3)
-# building = cityBIT.create_LoD2_building(bId4,
-#                                         [[294410, 5628920],
-#                                          [294430, 5628920],
-#                                          [294430, 5628930],
-#                                          [294410, 5628930]],
-#                                         160, 10, "1040", 3)
+building = cityBIT.create_LoD2_building(bId4,
+                                        [[294410, 5628920],
+                                         [294430, 5628920],
+                                         [294430, 5628930],
+                                         [294410, 5628930]],
+                                        160, 10, "1040", 3)
 newDataset.buildings[bId4] = building
 
 # create a building with a pavilion roof
