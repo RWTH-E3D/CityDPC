@@ -667,7 +667,7 @@ def _get_polygon_coordinates_from_element(
         pos_Es = polygon_element.findall(".//gml:pos", nsmap)
         for pos_E in pos_Es:
             polyStr.extend(pos_E.text.strip().split(" "))
-    return np.array([float(x) for x in polyStr])
+    return np.array([round(float(x), 3) for x in polyStr])
 
 
 def _add_surface_from_element(

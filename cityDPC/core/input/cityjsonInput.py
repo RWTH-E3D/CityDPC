@@ -120,16 +120,25 @@ def load_buildings_from_json_file(
         ):
             for vertex in vertices:
                 vertex[0] = (
-                    vertex[0] * data["transform"]["scale"][0]
-                    + data["transform"]["translate"][0]
+                    round(
+                        vertex[0] * data["transform"]["scale"][0]
+                        + data["transform"]["translate"][0]
+                    ),
+                    3,
                 )
                 vertex[1] = (
-                    vertex[1] * data["transform"]["scale"][1]
-                    + data["transform"]["translate"][1]
+                    round(
+                        vertex[1] * data["transform"]["scale"][1]
+                        + data["transform"]["translate"][1]
+                    ),
+                    3,
                 )
                 vertex[2] = (
-                    vertex[2] * data["transform"]["scale"][2]
-                    + data["transform"]["translate"][2]
+                    round(
+                        vertex[2] * data["transform"]["scale"][2]
+                        + data["transform"]["translate"][2]
+                    ),
+                    3,
                 )
             if dataset.transform == {}:
                 dataset.transform = data["transform"]
