@@ -10,6 +10,52 @@ from citydpc.util import coordinateOperations as cO
 import numpy as np
 
 
+def create_flat_surface(
+    id: str,
+    groundsCoordinates: list[list[float]],
+    groundSurfaceHeight: float,
+    flip: bool = False,
+) -> SurfaceGML:
+    """create a flat surface from a list of coordinates
+
+    Parameters
+    ----------
+    id : str
+        to append to the surface id
+    groundsCoordinates : list[list[float]]
+        list of coordinates of ground surface in 2D, should be self closing
+    groundSurfaceHeight : float
+        height of ground surface
+    flip : bool, optional
+        flip the surface (e.g. for roof surfaces), by default False
+
+    Returns
+    -------
+    SurfaceGML
+        flat surface
+    """
+
+    if groundsCoordinates[0] != groundsCoordinates[-1]:
+        groundsCoordinates.append(groundsCoordinates[0])
+    groundsCoordinates3D = [[x, y, groundSurfaceHeight] for x, y in groundsCoordinates]
+    # ensure that groundCoordinates are counter clockwise
+    groundSurface = SurfaceGML(
+        np.array(groundsCoordinates3D).flatten(),
+        surface_type="GroundSurface",
+        surface_id=f"citydpc_ground_{id}",
+    )
+    if groundSurface.isSurface is False:
+        raise ValueError("groundSurface must span a surface in 3D space")
+    if all(groundSurface.normal_uni == [0, 0, -1]) is flip:
+        groundsCoordinates3D.reverse()
+        groundSurface = SurfaceGML(
+            np.array(groundsCoordinates3D).flatten(),
+            surface_type="GroundSurface",
+            surface_id=f"citydpc_ground_{id}",
+        )
+    return groundSurface
+
+
 def add_flat_roof_and_walls(
     geometry: GeometryGML, id: int, gC2D: list[list[float]], gSH: float, bHAbs: float
 ):
