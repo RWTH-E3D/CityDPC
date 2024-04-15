@@ -2,22 +2,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.address import CoreAddress
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.address import CoreAddress
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
 
 
 import lxml.etree as ET
 import numpy as np
 import matplotlib.path as mplP
 
-from pyStadt.logger import logger
-from pyStadt.tools.cityATB import _border_check, check_building_for_border_and_address
-from pyStadt.core.obejcts.building import Building
-from pyStadt.core.obejcts.buildingPart import BuildingPart
-from pyStadt.core.obejcts.surfacegml import SurfaceGML
-from pyStadt.core.obejcts.fileUtil import CityFile
-from pyStadt.core.obejcts.geometry import GeometryGML
+from citydpc.logger import logger
+from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
+from citydpc.core.obejct.building import Building
+from citydpc.core.obejct.buildingPart import BuildingPart
+from citydpc.core.obejct.surfacegml import SurfaceGML
+from citydpc.core.obejct.fileUtil import CityFile
+from citydpc.core.obejct.geometry import GeometryGML
 
 
 def load_buildings_from_xml_file(
@@ -452,7 +452,7 @@ def _get_building_surfaces_from_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
                 coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-                ground_id = poly_id if poly_id else "pyStadt_poly_0"
+                ground_id = poly_id if poly_id else "citydpc_poly_0"
                 newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
                 if newSurface.isSurface:
                     geometry.add_surface(newSurface)
@@ -468,7 +468,7 @@ def _get_building_surfaces_from_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
                 coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-                roof_id = poly_id if poly_id else "pyStadt_poly_0"
+                roof_id = poly_id if poly_id else "citydpc_poly_0"
                 newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
                 if newSurface.isSurface:
                     building.remove_geometry(geomKey)
@@ -490,7 +490,7 @@ def _get_building_surfaces_from_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
                 coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
                     geometry.add_surface(newSurface)
@@ -558,7 +558,7 @@ def _get_building_surfaces_from_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
                 coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
                     geometry.add_surface(newSurface)
@@ -580,7 +580,7 @@ def _get_building_surfaces_from_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
                 coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-                poly_id = poly_id if poly_id else f"pyStadt_poly_{i}"
+                poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
                     geometry.add_surface(newSurface)
@@ -705,7 +705,7 @@ def _add_surface_from_element(
             poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
         )
         coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-        used_id = id if id else f"pyStadt_{id_str}_{i}"
+        used_id = id if id else f"citydpc_{id_str}_{i}"
         newSurface = SurfaceGML(
             coordinates, used_id, target_str.rsplit(":")[-1], poly_id
         )

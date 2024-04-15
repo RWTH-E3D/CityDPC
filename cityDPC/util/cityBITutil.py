@@ -2,10 +2,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.core.obejcts.geometry import GeometryGML
+    from citydpc.core.obejct.geometry import GeometryGML
 
-from pyStadt.core.obejcts.surfacegml import SurfaceGML
-from pyStadt.util import coordinateOperations as cO
+from citydpc.core.obejct.surfacegml import SurfaceGML
+from citydpc.util import coordinateOperations as cO
 
 import numpy as np
 
@@ -43,7 +43,7 @@ def add_flat_roof_and_walls(
                 ]
             ).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
 
@@ -53,7 +53,7 @@ def add_flat_roof_and_walls(
     roofSurface = SurfaceGML(
         np.array(helper).flatten(),
         surface_type="RoofSurface",
-        surface_id=f"pyStadt_roof_{id}",
+        surface_id=f"citydpc_roof_{id}",
     )
     geometry.add_surface(roofSurface)
 
@@ -132,7 +132,7 @@ def add_monopitch_roof_and_walls(
         wallSurface = SurfaceGML(
             np.array(coords).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
         roofCrds.append(coords[1])
@@ -142,7 +142,7 @@ def add_monopitch_roof_and_walls(
     roofSurface = SurfaceGML(
         np.array(roofCrds).flatten(),
         surface_type="RoofSurface",
-        surface_id=f"pyStadt_roof_{id}_{i}",
+        surface_id=f"citydpc_roof_{id}_{i}",
     )
     geometry.add_surface(roofSurface)
 
@@ -235,7 +235,7 @@ def add_dualpent_roof_and_walls(
         wallSurface = SurfaceGML(
             np.array(coords).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
 
@@ -250,7 +250,7 @@ def add_dualpent_roof_and_walls(
     wallSurface = SurfaceGML(
         np.array(coords).flatten(),
         surface_type="WallSurface",
-        surface_id=f"pyStadt_wall_{id}_{i}_dp",
+        surface_id=f"citydpc_wall_{id}_{i}_dp",
     )
     geometry.add_surface(wallSurface)
     # calculating roof surfaces
@@ -265,7 +265,7 @@ def add_dualpent_roof_and_walls(
     roofSurface = SurfaceGML(
         np.array(roofCrds).flatten(),
         surface_type="RoofSurface",
-        surface_id=f"pyStadt_roof_{id}_1",
+        surface_id=f"citydpc_roof_{id}_1",
     )
     geometry.add_surface(roofSurface)
     # for roof with lower points
@@ -279,7 +279,7 @@ def add_dualpent_roof_and_walls(
     roofSurface = SurfaceGML(
         np.array(roofCrds).flatten(),
         surface_type="RoofSurface",
-        surface_id=f"pyStadt_roof_{id}_2",
+        surface_id=f"citydpc_roof_{id}_2",
     )
     geometry.add_surface(roofSurface)
 
@@ -344,7 +344,7 @@ def add_gabled_roof_and_walls(
         wallSurface = SurfaceGML(
             np.array(coords).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
 
@@ -363,7 +363,7 @@ def add_gabled_roof_and_walls(
         roofSurface0 = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_1",
+            surface_id=f"citydpc_roof_{id}_1",
         )
         roofCrds = [
             list(gC2D[2]) + [bWAbs],
@@ -375,7 +375,7 @@ def add_gabled_roof_and_walls(
         roofSurface1 = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_2",
+            surface_id=f"citydpc_roof_{id}_2",
         )
     else:
         # 5th first, square second
@@ -391,7 +391,7 @@ def add_gabled_roof_and_walls(
         roofSurface0 = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_1",
+            surface_id=f"citydpc_roof_{id}_1",
         )
         roofCrds = [
             list(gC2D[3]) + [bWAbs],
@@ -403,7 +403,7 @@ def add_gabled_roof_and_walls(
         roofSurface1 = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_2",
+            surface_id=f"citydpc_roof_{id}_2",
         )
     geometry.add_surface(roofSurface0)
     geometry.add_surface(roofSurface1)
@@ -448,7 +448,7 @@ def add_hipped_roof_and_walls(
         wallSurface = SurfaceGML(
             np.array(coords).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
 
@@ -525,7 +525,7 @@ def add_hipped_roof_and_walls(
         roofSurface = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_{i}",
+            surface_id=f"citydpc_roof_{id}_{i}",
         )
         geometry.add_surface(roofSurface)
 
@@ -569,7 +569,7 @@ def add_pavilion_roof_and_walls(
         wallSurface = SurfaceGML(
             np.array(coords).flatten(),
             surface_type="WallSurface",
-            surface_id=f"pyStadt_wall_{id}_{i}",
+            surface_id=f"citydpc_wall_{id}_{i}",
         )
         geometry.add_surface(wallSurface)
 
@@ -586,6 +586,6 @@ def add_pavilion_roof_and_walls(
         roofSurface = SurfaceGML(
             np.array(roofCrds).flatten(),
             surface_type="RoofSurface",
-            surface_id=f"pyStadt_roof_{id}_{i}",
+            surface_id=f"citydpc_roof_{id}_{i}",
         )
         geometry.add_surface(roofSurface)

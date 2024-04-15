@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
+    from citydpc.core.obejct.surfacegml import SurfaceGML
 
-from pyStadt.logger import logger
+from citydpc.logger import logger
 
 
 class GeometryGML:

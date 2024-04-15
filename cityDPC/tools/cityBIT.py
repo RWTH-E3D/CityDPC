@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     pass
 
-from pyStadt.logger import logger
-from pyStadt.core.obejcts.geometry import GeometryGML
-from pyStadt.core.obejcts.surfacegml import SurfaceGML
-from pyStadt.core.obejcts.building import Building
-from pyStadt.util import cityBITutil as cBU
+from citydpc.logger import logger
+from citydpc.core.obejct.geometry import GeometryGML
+from citydpc.core.obejct.surfacegml import SurfaceGML
+from citydpc.core.obejct.building import Building
+from citydpc.util import cityBITutil as cBU
 
 import numpy as np
 
@@ -57,7 +57,7 @@ def create_LoD2_building(
     groundSurface = SurfaceGML(
         np.array(groundsCoordinates3D).flatten(),
         surface_type="GroundSurface",
-        surface_id=f"pyStadt_ground_{id}",
+        surface_id=f"citydpc_ground_{id}",
     )
     if groundSurface.isSurface is False:
         raise ValueError("groundSurface must span a surface in 3D space")
@@ -67,7 +67,7 @@ def create_LoD2_building(
         groundSurface = SurfaceGML(
             np.array(groundsCoordinates3D).flatten(),
             surface_type="GroundSurface",
-            surface_id=f"pyStadt_ground_{id}",
+            surface_id=f"citydpc_ground_{id}",
         )
 
     # make sure that same coordiantes are used as in groundSurface object
