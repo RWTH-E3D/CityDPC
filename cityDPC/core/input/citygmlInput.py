@@ -71,6 +71,8 @@ def load_buildings_from_xml_file(
 
     # find gml envelope and check for compatability
     fileSRSName = None
+    lowerCorner = None
+    upperCorner = None
     envelope_E = root.find("gml:boundedBy/gml:Envelope", nsmap)
     if envelope_E is not None:
         fileSRSName = envelope_E.attrib["srsName"]
@@ -108,8 +110,6 @@ def load_buildings_from_xml_file(
         return
 
     # creating border for coordinate restriction
-    lowerCorner = None
-    upperCorner = None
     if borderCoordinates is not None:
         if len(borderCoordinates) > 2:
             border = mplP.Path(np.array(borderCoordinates))
