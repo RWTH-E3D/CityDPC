@@ -168,3 +168,32 @@ def create_LoD2_building(
     building.measuredHeight = buildingHeight
 
     return building
+
+
+def create_LoD1_building(
+    id: str,
+    groundsCoordinates: list[list[float]],
+    groundSurfaceHeight: float,
+    buildingHeight: float,
+) -> Building:
+    """create LoD1 building
+
+    Parameters
+    ----------
+    id : str
+        gml:id of building
+    groundsCoordinates : list[list[float]]
+        list of coordinates of ground surface in 2D, should be self closing
+    groundSurfaceHeight : float
+        height of ground surface
+    buildingHeight : float
+        height of building (from lowest point to highest point), has to be positive and
+        greater than 0
+    """
+    building = create_LoD2_building(
+        id, groundsCoordinates, groundSurfaceHeight, buildingHeight, "1000"
+    )
+    building.roofType = None
+    building.lod = 1
+    building.get_geometries()[0].lod = 1
+    return building
