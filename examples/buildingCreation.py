@@ -87,6 +87,24 @@ building = cityBIT.create_LoD2_building(
 )
 newDataset.buildings[bId5] = building
 
+# create a lod 1 building
+bId6 = "building6"
+building = cityBIT.create_LoD1_building(
+    bId6,
+    [[294410, 5628945], [294420, 5628945], [294420, 5628935], [294410, 5628935]],
+    160,
+    10,
+)
+newDataset.buildings[bId6] = building
+
+# create a lod 0 building
+bId7 = "building7"
+building = cityBIT.create_LoD0_building(
+    bId7,
+    [[294430, 5628945], [294440, 5628945], [294440, 5628935], [294430, 5628935]],
+    160,
+)
+newDataset.buildings[bId7] = building
 
 cityjsonOutput.write_cityjson_file(
     newDataset, "examples/files/buildingCreation.city.json"

@@ -6,11 +6,8 @@ if TYPE_CHECKING:
 
 from citydpc.logger import logger
 from citydpc.core.obejct.geometry import GeometryGML
-from citydpc.core.obejct.surfacegml import SurfaceGML
 from citydpc.core.obejct.building import Building
 from citydpc.util import cityBITutil as cBU
-
-import numpy as np
 
 
 def create_LoD2_building(
@@ -50,25 +47,7 @@ def create_LoD2_building(
     Building
         LoD2 building
     """
-    if groundsCoordinates[0] != groundsCoordinates[-1]:
-        groundsCoordinates.append(groundsCoordinates[0])
-    groundsCoordinates3D = [[x, y, groundSurfaceHeight] for x, y in groundsCoordinates]
-    # ensure that groundCoordinates are counter clockwise
-    groundSurface = SurfaceGML(
-        np.array(groundsCoordinates3D).flatten(),
-        surface_type="GroundSurface",
-        surface_id=f"citydpc_ground_{id}",
-    )
-    if groundSurface.isSurface is False:
-        raise ValueError("groundSurface must span a surface in 3D space")
-    if all(groundSurface.normal_uni == [0, 0, -1]) is False:
-        groundsCoordinates3D.reverse()
-        groundSurface = SurfaceGML(
-            np.array(groundsCoordinates3D).flatten(),
-            surface_type="GroundSurface",
-            surface_id=f"citydpc_ground_{id}",
-        )
-
+    groundSurface = cBU.create_flat_surface(id, groundsCoordinates, groundSurfaceHeight)
     # make sure that same coordiantes are used as in groundSurface object
     # (regarding order, dropped coorindates)
     gC3D = groundSurface.gml_surface_2array
@@ -196,4 +175,31 @@ def create_LoD1_building(
     building.roofType = None
     building.lod = 1
     building.get_geometries()[0].lod = 1
+    return building
+
+
+def create_LoD0_building(
+    id: str,
+    groundsCoordinates: list[list[float]],
+    groundSurfaceHeight: float,
+) -> Building:
+    """create LoD0 building
+
+    Parameters
+    ----------
+    id : str
+        gml:id of building
+    groundsCoordinates : list[list[float]]
+        list of coordinates of ground surface in 2D, should be self closing
+    groundSurfaceHeight : float
+        height of ground surface
+    """
+    mainSurface = cBU.create_flat_surface(id, groundsCoordinates, groundSurfaceHeight)
+    building = Building(id)
+    building.lod = 0
+    building.is_building_part = False
+
+    geometry = GeometryGML("MultiSurface", f"geom_{id}", lod=0)
+    building.add_geometry(geometry)
+    geometry.add_surface(mainSurface)
     return building
