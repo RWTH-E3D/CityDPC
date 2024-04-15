@@ -182,6 +182,7 @@ def create_LoD0_building(
     id: str,
     groundsCoordinates: list[list[float]],
     groundSurfaceHeight: float,
+    isRoofEdge: bool = False,
 ) -> Building:
     """create LoD0 building
 
@@ -194,7 +195,9 @@ def create_LoD0_building(
     groundSurfaceHeight : float
         height of ground surface
     """
-    mainSurface = cBU.create_flat_surface(id, groundsCoordinates, groundSurfaceHeight)
+    mainSurface = cBU.create_flat_surface(
+        id, groundsCoordinates, groundSurfaceHeight, isRoofEdge
+    )
     building = Building(id)
     building.lod = 0
     building.is_building_part = False
