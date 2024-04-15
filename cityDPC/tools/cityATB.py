@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
-    from pyStadt.core.obejcts.building import Building
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.building import Building
 
 import numpy as np
 import matplotlib.path as mplP

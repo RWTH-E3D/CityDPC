@@ -1,6 +1,6 @@
-from pyStadt.dataset import Dataset
-from pyStadt.tools import cityBIT
-from pyStadt.core.output import cityjsonOutput
+from citydpc.dataset import Dataset
+from citydpc.tools import cityBIT
+from citydpc.core.output import cityjsonOutput
 
 # create empty dataset
 newDataset = Dataset()

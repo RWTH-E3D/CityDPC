@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.core.obejcts.building import Building
+    from citydpc.core.obejct.building import Building
 
-from pyStadt.logger import logger
+from citydpc.logger import logger
 
 import math
 

@@ -2,20 +2,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
 
 import json
 import numpy as np
 import matplotlib.path as mplP
 
-from pyStadt.core.obejcts.building import Building
-from pyStadt.core.obejcts.buildingPart import BuildingPart
-from pyStadt.core.obejcts.surfacegml import SurfaceGML
-from pyStadt.core.obejcts.fileUtil import CityFile
-from pyStadt.core.obejcts.geometry import GeometryGML
-from pyStadt.tools.cityATB import _border_check, check_building_for_border_and_address
-from pyStadt.logger import logger
+from citydpc.core.obejct.building import Building
+from citydpc.core.obejct.buildingPart import BuildingPart
+from citydpc.core.obejct.surfacegml import SurfaceGML
+from citydpc.core.obejct.fileUtil import CityFile
+from citydpc.core.obejct.geometry import GeometryGML
+from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
+from citydpc.logger import logger
 
 
 def load_buildings_from_json_file(
@@ -350,7 +350,7 @@ def _add_cityjson_surface_to_building(
 
     if surfaceId is None:
         surfaceId = (
-            f"pyStadt_{building.gml_id}_{surfaceType}_"
+            f"citydpc_{building.gml_id}_{surfaceType}_"
             + f"{'_'.join([str(i) for i in depthInfo])}"
         )
 

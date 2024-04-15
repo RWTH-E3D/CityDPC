@@ -2,17 +2,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
-    from pyStadt.core.obejcts.geometry import GeometryGML
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.surfacegml import SurfaceGML
+    from citydpc.core.obejct.geometry import GeometryGML
 
 
 import lxml.etree as ET
 
-import pyStadt.util.citygmlClasses as citygmlClasses
-from pyStadt.util.envelope import update_min_max
-from pyStadt.logger import logger
+import citydpc.util.citygmlClasses as citygmlClasses
+from citydpc.util.envelope import update_min_max
+from citydpc.logger import logger
 import uuid
 
 
@@ -54,7 +54,7 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
         nroot_E,
         ET.QName(nClass.gml, "name"),
     )
-    name_E.text = "created using the e3D pyStadt"
+    name_E.text = "created using the e3D citydpc"
 
     # creating gml enevelope
     bound_E = ET.SubElement(nroot_E, ET.QName(nClass.gml, "boundedBy"))
@@ -348,7 +348,7 @@ def _add_lod_0_geometry_to_xml_building(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     geometry : GeometryGML
         geometry to be added
     building_E : ET.Element
@@ -382,7 +382,7 @@ def _add_lod_0_geometry_to_xml_building_3_0(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     geometry : GeometryGML
         geometry to be added
     building_E : ET.Element
@@ -420,7 +420,7 @@ def _add_surfaceMember_to_element(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     surface : SurfaceGML
         surface to be added
     parent_E : ET.Element
@@ -454,7 +454,7 @@ def _add_lod_1_geometry_to_xml_building(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     geometry : GeometryGML
         geometry to be added
     building_E : ET.Element
@@ -489,7 +489,7 @@ def _add_lod_2_geometry_to_xml_building(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     geometry : GeometryGML
         geometry to be added
     building_E : ET.Element
@@ -524,7 +524,7 @@ def _add_lod_2_geometry_to_xml_building(
             ET.QName(nClass.bldg, surface.surface_type),
         )
         if surface.surface_id is not None and not surface.surface_id.startswith(
-            "pyStadt_"
+            "citydpc_"
         ):
             wallRoofGround_E.attrib[
                 "{http://www.opengis.net/gml}id"
@@ -548,7 +548,7 @@ def _add_lod_2_geometry_to_xml_building(
             polygon_E.attrib["{http://www.opengis.net/gml}id"] = polyID
 
         if surface.polygon_id is not None and not surface.polygon_id.startswith(
-            "pyStadt_"
+            "citydpc_"
         ):
             polygon_E.attrib["{http://www.opengis.net/gml}id"] = surface.polygon_id
 
@@ -575,7 +575,7 @@ def _add_lod_2_geometry_to_xml_building_3_0(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset for updating min max coordinates
+        CityDPC Dataset for updating min max coordinates
     geometry : GeometryGML
         geometry to be added
     building_E : ET.Element
@@ -597,7 +597,7 @@ def _add_lod_2_geometry_to_xml_building_3_0(
             ET.QName(nClass.core, surface.surface_type),
         )
         if surface.surface_id is not None and not surface.surface_id.startswith(
-            "pyStadt_"
+            "citydpc_"
         ):
             wallRoofGround_E.attrib[
                 "{http://www.opengis.net/gml}id"
@@ -620,7 +620,7 @@ def _add_lod_2_geometry_to_xml_building_3_0(
             polygon_E.attrib["{http://www.opengis.net/gml}id"] = polyID
 
         if surface.polygon_id is not None and not surface.polygon_id.startswith(
-            "pyStadt_"
+            "citydpc_"
         ):
             polygon_E.attrib["{http://www.opengis.net/gml}id"] = surface.polygon_id
 

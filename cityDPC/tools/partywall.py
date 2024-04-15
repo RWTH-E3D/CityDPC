@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
 
 
 import numpy as np

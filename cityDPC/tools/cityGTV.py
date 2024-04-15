@@ -8,9 +8,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.surfacegml import SurfaceGML
     from pyproj import Proj
 
 import copy
@@ -35,7 +35,7 @@ def transform_dataset(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt dataset
+        CityDPC dataset
     inProj : Proj
         pyproj.Proj projection of inital coordinate system
     outProj : Proj
@@ -56,7 +56,7 @@ def transform_dataset(
     Returns
     -------
     Dataset
-        pyStadt dataset after transformation
+        citydpc dataset after transformation
     """
 
     if inplace:
@@ -217,7 +217,7 @@ def validate_dataset(dataset: Dataset) -> dict:
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset
+        CityDPC Dataset
 
     Returns
     -------

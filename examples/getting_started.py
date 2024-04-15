@@ -1,11 +1,11 @@
 """
-This is an example script shows how you 
+This is an example script shows how you
 can load files to the package and get some
 basic information about the dataset
 """
 
 # start by importing the Dataset package
-from pyStadt import Dataset
+from citydpc import Dataset
 
 # important: import Dataset and not dataset
 
@@ -14,7 +14,7 @@ newDataset = Dataset()
 
 # to load buildings from a file you need the respective importer
 # to add a xml/gml file:
-from pyStadt.core.input.citygmlInput import load_buildings_from_xml_file
+from citydpc.core.input.citygmlInput import load_buildings_from_xml_file
 
 load_buildings_from_xml_file(newDataset, "examples/files/EssenExample.gml")
 
@@ -23,7 +23,7 @@ number_of_buildings = newDataset.size()
 
 # you can get some more info (e.g. gml_version, crs, LoD)
 # using the analysis function
-from pyStadt.tools import cityATB
+from citydpc.tools import cityATB
 
 dict_with_info = cityATB.analysis(newDataset)
 
@@ -92,7 +92,7 @@ dataCombine = cityATB.search_dataset(
 # if you want to save your changes you need the respective exporter
 # for CityGML use:
 print(len(dataCombine.get_building_list()))
-from pyStadt.core.output.citygmlOutput import write_citygml_file
+from citydpc.core.output.citygmlOutput import write_citygml_file
 
 write_citygml_file(dataCombine, "newFilename.gml")
 # you can choose between CityGML 1.0 and 2.0

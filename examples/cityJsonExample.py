@@ -1,6 +1,6 @@
-from pyStadt import Dataset
-from pyStadt.core.input.cityjsonInput import load_buildings_from_json_file
-from pyStadt.core.output.cityjsonOutput import write_cityjson_file
+from citydpc import Dataset
+from citydpc.core.input.cityjsonInput import load_buildings_from_json_file
+from citydpc.core.output.cityjsonOutput import write_cityjson_file
 
 # create empty dataset
 newDataset = Dataset()

@@ -1,6 +1,6 @@
-# pyStadt
+# CityDPC
 
-pyStadt is a python package for working with CityGML (and soon CityJSON) files.
+CityDPC is a python package for working with CityGML (and soon CityJSON) files.
 
 
 ## Getting started

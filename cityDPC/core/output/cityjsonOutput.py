@@ -2,13 +2,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
-    from pyStadt.core.obejcts.geometry import GeometryGML
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.surfacegml import SurfaceGML
+    from citydpc.core.obejct.geometry import GeometryGML
 
-from pyStadt.logger import logger
-from pyStadt.util.envelope import update_min_max
+from citydpc.logger import logger
+from citydpc.util.envelope import update_min_max
 
 import json
 
@@ -428,7 +428,7 @@ def __update_surfaces_dict(surface: SurfaceGML, surfaces: list[dict]) -> int:
     surface_dict = {}
 
     surface_dict["type"] = surface.surface_type
-    if not surface.surface_id.startswith("pyStadt_"):
+    if not surface.surface_id.startswith("citydpc_"):
         surface_dict["id"] = surface.surface_id
 
     for i, presentDict in enumerate(surfaces):
