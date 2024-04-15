@@ -17,7 +17,7 @@ def create_LoD2_building(
     id: str,
     groundsCoordinates: list[list[float]],
     groundSurfaceHeight: float,
-    buildingHeight: float,
+    geometryHeight: float,
     roofType: str,
     roofHeight: float = None,
     roofOrientation: int = None,
@@ -32,8 +32,8 @@ def create_LoD2_building(
         list of coordinates of ground surface in 2D, should be self closing
     groundSurfaceHeight : float
         height of ground surface
-    buildingHeight : float
-        height of building (from lowest point to highest point), has to be positive and
+    geometryHeight : float
+        height of building geometry (from lowest point to highest point), has to be positive and
         greater than 0
     roofType : str
         type of roof, one of ["1000", "1010", "1020", "1030", "1040", "1070"]
@@ -75,7 +75,7 @@ def create_LoD2_building(
     gC2D = gC3D[:, :2]
 
     # ensure that buildingHeight is positive and greater than 0 (actual LoD2)
-    if buildingHeight < 0:
+    if geometryHeight < 0:
         raise ValueError("buildingHeight must be positive and greater than 0")
 
     # ensure that all needed values are given
@@ -97,7 +97,7 @@ def create_LoD2_building(
             raise ValueError("roofHeight must be specified for roofType 1070")
         elif roofHeight < 0:
             raise ValueError("roofHeight must be positive and greater than 0")
-        elif roofHeight > buildingHeight:
+        elif roofHeight > geometryHeight:
             raise ValueError(
                 "roofHeight must be smaller than buildingHeight (from lowest point to"
                 + " highest point)"
@@ -138,7 +138,7 @@ def create_LoD2_building(
     geometry.add_surface(groundSurface)
 
     gSH = groundSurfaceHeight
-    bHAbs = gSH + buildingHeight
+    bHAbs = gSH + geometryHeight
 
     if roofType == "1000":
         cBU.add_flat_roof_and_walls(geometry, id, gC2D, gSH, bHAbs)
@@ -165,7 +165,7 @@ def create_LoD2_building(
         elif roofType == "1070":
             cBU.add_pavilion_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs)
 
-    building.measuredHeight = buildingHeight
+    building.measuredHeight = geometryHeight
 
     return building
 
@@ -174,7 +174,7 @@ def create_LoD1_building(
     id: str,
     groundsCoordinates: list[list[float]],
     groundSurfaceHeight: float,
-    buildingHeight: float,
+    geometryHeight: float,
 ) -> Building:
     """create LoD1 building
 
@@ -186,12 +186,12 @@ def create_LoD1_building(
         list of coordinates of ground surface in 2D, should be self closing
     groundSurfaceHeight : float
         height of ground surface
-    buildingHeight : float
-        height of building (from lowest point to highest point), has to be positive and
+    geometryHeight : float
+        height of building geometry (from lowest point to highest point), has to be positive and
         greater than 0
     """
     building = create_LoD2_building(
-        id, groundsCoordinates, groundSurfaceHeight, buildingHeight, "1000"
+        id, groundsCoordinates, groundSurfaceHeight, geometryHeight, "1000"
     )
     building.roofType = None
     building.lod = 1
