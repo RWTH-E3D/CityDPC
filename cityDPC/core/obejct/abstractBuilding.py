@@ -232,7 +232,7 @@ class AbstractBuilding:
             )
         else:
             logger.warning(
-                f"Surface {surfaceID} of Building {self} is not a valid surface"
+                f"Surface {surfaceID} of Building {self.gml_id} is not a valid surface"
             )
 
     def create_legacy_surface_dicts(self) -> None:
