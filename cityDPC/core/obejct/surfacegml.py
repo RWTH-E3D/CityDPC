@@ -74,7 +74,7 @@ class SurfaceGML(object):
         self.surface_tilt = self.get_gml_tilt()
 
         if self.surface_type is None:
-            if self.surface_tilt == 0.0:
+            if self.surface_tilt == 0.0 and self.surface_orientation == -2:
                 self.surface_type = "GroundSurface"
             elif self.surface_tilt == 90.0:
                 self.surface_type = "WallSurface"
