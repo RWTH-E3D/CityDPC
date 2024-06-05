@@ -7,4 +7,4 @@ newDataset = Dataset()
 
 load_buildings_from_xml_file(newDataset, "examples/files/EssenExample.gml")
 
-print(getDataFrame(newDataset, True))
+print(getDataFrame(newDataset, True, True))
