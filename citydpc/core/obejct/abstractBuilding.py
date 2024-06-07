@@ -34,7 +34,7 @@ class AbstractBuilding:
         self.roof_height = None
         self.lod = None
         self.is_building_part = None
-        self.numOfWalls = None
+        self.allWalls = None
         self.freeWalls = None
 
         self.creationDate = None
