@@ -28,6 +28,8 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
     """
     all_party_walls = []
     for i, building_0 in enumerate(dataset.get_building_list()):
+        building_0.numOfWalls = len(building_0.get_surfaces(surfaceTypes=["WallSurface"]))
+        building_0.freeWalls = building_0.numOfWalls
         polys_in_building_0 = []
         # get coordinates from all groundSurface of building geometry
         if building_0.has_3Dgeometry():
@@ -44,6 +46,10 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
         if building_0.has_building_parts():
             for b_part in building_0.get_building_parts():
                 if b_part.has_3Dgeometry():
+                    b_part.numOfWalls = len(
+                        b_part.get_surfaces(surfaceTypes=["WallSurface"])
+                    )
+                    b_part.freeWalls = b_part.numOfWalls
                     for groundSurface in b_part.get_surfaces(["GroundSurface"]):
                         polys_in_building_0.append(
                             {
@@ -66,6 +72,8 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
 
         # collision with other buildings
         for building_1 in dataset.get_building_list()[i + 1 :]:
+            building_1.numOfWalls = len(building_1.get_surfaces(surfaceTypes=["WallSurface"]))
+            building_1.freeWalls = building_1.numOfWalls
             # collision with the building itself
             if building_1.has_3Dgeometry():
                 for poly_0 in polys_in_building_0:
@@ -82,7 +90,11 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
 
             # collsion with a building part of the building
             if building_1.has_building_parts():
-                for b_part in building_1.building_parts:
+                for b_part in building_1.get_building_parts():
+                    b_part.numOfWalls = len(
+                        b_part.get_surfaces(surfaceTypes=["WallSurface"])
+                    )
+                    b_part.freeWalls = b_part.numOfWalls
                     if b_part.has_3Dgeometry():
                         for poly_0 in polys_in_building_0:
                             p_0 = _create_buffered_polygon(poly_0["coor"])
@@ -124,7 +136,9 @@ def _find_party_walls(
     # b_0_normvectors = _coor_dict_to_normvector_dict(b_0_surfaces)
     # b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
     for surface_0 in b_0_surfaces:
+        hitS0 = False
         for surface_1 in b_1_surfaces:
+            hitS1 = False
             # consider walls if there norm vectors equal or inverse or don't differ
             # more than 15 degrees (= 0.9659 cos(rad))
             if (
@@ -222,6 +236,12 @@ def _find_party_walls(
                                     threeD_contact,
                                 ]
                             )
+                            hitS0 = True
+                            hitS1 = True
+                            if not hitS0:
+                                buildingLike_0.freeWalls -= 1
+                            if not hitS1:
+                                buildingLike_1.freeWalls -= 1
 
                         elif type(intersection) is shapely.GeometryCollection:
                             for section in intersection.geoms:
@@ -242,6 +262,12 @@ def _find_party_walls(
                                             threeD_contact,
                                         ]
                                     )
+                                    hitS0 = True
+                                    hitS1 = True
+                                    if not hitS0:
+                                        buildingLike_0.freeWalls -= 1
+                                    if not hitS1:
+                                        buildingLike_1.freeWalls -= 1
 
     return party_walls
 

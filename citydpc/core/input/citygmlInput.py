@@ -18,6 +18,7 @@ from citydpc.core.obejct.buildingPart import BuildingPart
 from citydpc.core.obejct.surfacegml import SurfaceGML
 from citydpc.core.obejct.fileUtil import CityFile
 from citydpc.core.obejct.geometry import GeometryGML
+from citydpc.tools.partywall import get_party_walls
 
 
 def load_buildings_from_xml_file(
@@ -27,6 +28,7 @@ def load_buildings_from_xml_file(
     addressRestriciton: dict = None,
     ignoreRefSystem: bool = False,
     ignoreExistingTransform: bool = False,
+    updatePartyWalls: bool = False,
 ):
     """adds buildings from filepath to the dataset
 
@@ -45,6 +47,8 @@ def load_buildings_from_xml_file(
     ignoreExistingTransform : bool, optional
         flag to ignore comparission between transform object in new file and dataset,
         by default False
+    updatePartyWalls : bool, optional
+        flag to update party walls, by default False
     """
     logger.info(f"loading buildings from CityGML file {filepath}")
     supportedCityGMLversions = ["1.0", "2.0", "3.0"]
@@ -194,6 +198,8 @@ def load_buildings_from_xml_file(
     dataset._files.append(newCFile)
     if dataset.transform == {}:
         dataset.transform = {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+    if updatePartyWalls:
+        dataset.party_walls = get_party_walls(dataset)
     logger.info(f"finished loading buildings from CityGML file {filepath}")
 
 

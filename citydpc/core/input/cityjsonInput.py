@@ -16,6 +16,7 @@ from citydpc.core.obejct.fileUtil import CityFile
 from citydpc.core.obejct.geometry import GeometryGML
 from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
 from citydpc.logger import logger
+from citydpc.tools.partywall import get_party_walls
 
 
 def load_buildings_from_json_file(
@@ -26,6 +27,7 @@ def load_buildings_from_json_file(
     ignoreRefSytem: bool = False,
     dontTransform: bool = False,
     ignoreExistingTransform: bool = False,
+    updatePartyWalls: bool = False,
 ) -> None:
     """adds buldings from filepath to dataset
 
@@ -47,6 +49,8 @@ def load_buildings_from_json_file(
     ignoreExistingTransform : bool, optional
         flag to ignore comparission between transform object in new file and dataset,
         by default False
+    updatePartyWalls : bool, optional
+        flag to update party walls, by default False
     """
     logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
@@ -210,6 +214,8 @@ def load_buildings_from_json_file(
         buildingIDs
     )
     dataset._files.append(newCityFile)
+    if updatePartyWalls:
+        dataset.party_walls = get_party_walls(dataset)
     logger.info(f"finished loading buildings from CityJSON file {filepath}")
 
 
