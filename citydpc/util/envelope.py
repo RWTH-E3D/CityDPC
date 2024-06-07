@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.surfacegml import SurfaceGML
 
 
 def update_min_max(dataset: Dataset, surface: SurfaceGML):
@@ -17,6 +17,6 @@ def update_min_max(dataset: Dataset, surface: SurfaceGML):
     for point in surface.gml_surface_2array:
         for i, coordinate in enumerate(point):
             if coordinate < dataset._minimum[i]:
-                dataset._minimum[i] = coordinate
+                dataset._minimum[i] = float(coordinate)
             elif coordinate > dataset._maximum[i]:
-                dataset._maximum[i] = coordinate
+                dataset._maximum[i] = float(coordinate)

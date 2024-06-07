@@ -3,9 +3,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pyStadt"
+name = "citydpc"
 version = "0.0.1"
 authors = [
+  { name="Maxim Shamovich", email="shamovich@e3d.rwth-aachen.de" },
   { name="Simon Raming", email="simon.raming@rwth-aachen.de" },
 ]
 description = "A python package for working with CityGML and CityJSON files"

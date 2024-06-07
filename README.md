@@ -1,15 +1,19 @@
-# pyStadt
+# CityDPC
 
-pyStadt is a python package for working with CityGML (and soon CityJSON) files.
+CityDPC is a python package for working with CityGML (and soon CityJSON) files.
 
 
 ## Getting started
 
-Make sure you have the latest version installed by first building the package using 
+First start by cloning the repo.
+Continue by installing the package, while in the root director, using:
 ```bash
-python3 -m build
+pip install .
 ```
-and then install the package (if necessary using the _force-reinstall_ flag).
+If you are developing we highly recommend using the [Development Mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) using:
+```bash
+pip install -e .
+```
 
 Also take a look at the [examples](examples)!
 
@@ -33,3 +37,8 @@ Available under the MIT [License](License.md).
 
 ## Project status
 Currently under active development.
+
+
+## Latest Changes
+
+- 0.m.n To-Do

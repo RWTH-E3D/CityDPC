@@ -1,4 +1,4 @@
-from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+from citydpc.core.obejct.abstractBuilding import AbstractBuilding
 
 
 class BuildingPart(AbstractBuilding):

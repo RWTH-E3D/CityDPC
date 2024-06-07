@@ -2,15 +2,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.building import Building
 
 import numpy as np
 import matplotlib.path as mplP
 import copy
 
 
-def analysis(dataset: Dataset) -> dict:
+def analysis(dataset: Dataset) -> dict[dict]:
     """general file analysis based on CityATB
 
     Parameters
@@ -21,7 +22,7 @@ def analysis(dataset: Dataset) -> dict:
     Returns
     -------
     dict
-        contains results with keys:
+        contains dict of dicts where key is filename and value is dict with keys:
         - gml_version
         - gml_name
         - crs
@@ -32,35 +33,43 @@ def analysis(dataset: Dataset) -> dict:
         - number_of_buildingParts
 
     """
+    fullResult = {}
+    for singleFile in dataset._files:
+        fileResult = {}
 
-    result = {}
+        fileResult["gml_version"] = singleFile.cityGMLversion
+        if singleFile.gmlName is not None:
+            fileResult["gml_name"] = singleFile.gmlName
+        else:
+            fileResult["gml_name"] = singleFile.identifier
+        fileResult["crs"] = singleFile.srsName
 
-    result["gml_version"] = dataset._files[0].cityGMLversion
-    result["gml_name"] = dataset._files[0].gmlName
-    result["crs"] = dataset.srsName
+        all_LoDs = []
+        buildingPart_counter = 0
+        for building_id in singleFile.building_ids:
+            building = dataset.buildings[building_id]
+            for geometry in building.get_geometries():
+                if str(geometry.lod) not in all_LoDs:
+                    all_LoDs.append(str(geometry.lod))
+            if building.has_building_parts():
+                for buildingPart in building.building_parts:
+                    buildingPart_counter -= -1
+                    for geometry in buildingPart.get_geometries():
+                        if str(geometry.lod) not in all_LoDs:
+                            all_LoDs.append(str(geometry.lod))
+        all_LoDs.sort()
+        fileResult["gml_lod"] = ", ".join(all_LoDs)
 
-    all_LoDs = []
-    buildingPart_counter = 0
-    for building in dataset.get_building_list():
-        if building.lod not in all_LoDs:
-            all_LoDs.append(building.lod)
-        if building.has_building_parts():
-            for buildingPart in building.building_parts:
-                buildingPart_counter -= -1
-                if buildingPart.lod not in all_LoDs:
-                    all_LoDs.append(buildingPart.lod)
-    all_LoDs.sort()
-    result["gml_lod"] = ", ".join(all_LoDs)
+        fileResult["ade"] = ", ".join(singleFile.ades)
+        numOfBuilding = len(singleFile.building_ids)
+        fileResult["number_of_cityobject_members"] = (
+            numOfBuilding + singleFile.num_notLoaded_CityObjectMembers
+        )
+        fileResult["number_of_buildings"] = numOfBuilding
+        fileResult["number_of_buildingParts"] = buildingPart_counter
+        fullResult[singleFile.filepath] = fileResult
 
-    result["ade"] = ", ".join(dataset._files[0].ades)
-    numOfBuilding = dataset.size()
-    result["number_of_cityobject_members"] = numOfBuilding + len(
-        dataset.otherCityObjectMembers
-    )
-    result["number_of_buildings"] = numOfBuilding
-    result["number_of_buildingParts"] = buildingPart_counter
-
-    return result
+    return fileResult
 
 
 def search_dataset(
@@ -102,7 +111,11 @@ def search_dataset(
         border = None
 
     for file in newDataset._files:
-        if border is not None:
+        if (
+            border is not None
+            and file.lowerCorner is not None
+            and file.upperCorner is not None
+        ):
             [x0, y0] = file.lowerCorner
             [x1, y1] = file.upperCorner
             fileEnvelopeCoor = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
@@ -191,13 +204,13 @@ def check_building_for_address(
         returns True if all conditions are met for the building or
         at least one buildingPart
     """
-    if building.address is not None:
+    if not building.address.address_is_empty():
         res = building.address.check_address(addressRestriciton)
         if res:
             return True
 
     for buildingPart in building.get_building_parts():
-        if buildingPart.address is not None:
+        if not buildingPart.address.address_is_empty():
             res = buildingPart.address.check_address(addressRestriciton)
             if res:
                 return True
@@ -226,10 +239,11 @@ def _check_if_within_border(
         None:  building has no ground reference
     """
 
-    if building.grounds != {}:
-        selected_surface = list(building.grounds.values())
-    elif building.roofs != {}:
-        selected_surface = list(building.roofs.values())
+    grounds = building.get_surfaces(["GroundSurface"])
+    if len(grounds) != 0:
+        selected_surface = grounds
+    elif building.get_geometries(["RoofSurface"]) != []:
+        selected_surface = building.get_geometries(["RoofSurface"])
     else:
         return None
 
@@ -268,3 +282,46 @@ def _border_check(
         if n_border.contains_point(point):
             return True
     return False
+
+
+def check_building_for_border_and_address(
+    building: Building,
+    borderCoordinates: list[list[float]] | None,
+    addressRestriciton: dict | None,
+    border: mplP.Path | None,
+) -> bool:
+    """checks if a building is located within the border and has the given address
+
+    Parameters
+    ----------
+    building : Building
+        building to check
+    borderCordinates : list[list[float]], optional
+        2D array of 2D coordinates
+    addressRestriciton : dict, optional
+        key: value pair of CoreAddress attribute and wanted value
+    border : mplP.Path, optional
+        borderCoordinates as a matplotlib.path.Path
+
+    Returns
+    -------
+    bool
+        True if building is located within border and has the given address
+    """
+    if borderCoordinates is None and addressRestriciton is None:
+        return True
+
+    if borderCoordinates is not None and border is None:
+        border = mplP.Path(np.array(borderCoordinates))
+
+    if border is not None:
+        res_coor = check_if_building_in_coordinates(building, borderCoordinates, border)
+
+    if not building.address.address_is_empty():
+        res_addr = building.address.check_address(addressRestriciton)
+
+    if border is not None and addressRestriciton is None:
+        return res_coor
+    elif border is None and addressRestriciton is not None:
+        return res_addr
+    return res_coor and res_addr

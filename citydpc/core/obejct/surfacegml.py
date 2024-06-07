@@ -4,7 +4,7 @@ import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
 
-from pyStadt.logger import logger
+from citydpc.logger import logger
 
 
 class SurfaceGML(object):
@@ -18,7 +18,7 @@ class SurfaceGML(object):
     Parameters
     ----------
 
-    gml_surface : iterable
+    gml_surface : list[float]
         list of gml points with srsDimension=3 the first 3 and the last 3
         entries must describe the same point in CityGML
 
@@ -28,7 +28,11 @@ class SurfaceGML(object):
     """
 
     def __init__(
-        self, gml_surface, surface_id=None, surface_type=None, polygon_id=None
+        self,
+        gml_surface: list[float],
+        surface_id=None,
+        surface_type=None,
+        polygon_id=None,
     ):
         self.gml_surface = gml_surface
         self.surface_id = surface_id
@@ -53,7 +57,7 @@ class SurfaceGML(object):
             if element in useless_points:
                 split_surface.remove(element)
         self.gml_surface = list(chain(*split_surface))
-        if len(self.gml_surface) < 9:
+        if len(self.gml_surface) < 12:
             self.isSurface = False
             logger.error(
                 f"WARNING! The surface {surface_id} - {polygon_id} has to few "
@@ -62,12 +66,20 @@ class SurfaceGML(object):
             return
         self.isSurface = True
 
-        self.gml_surface_2array = np.reshape(gml_surface, (-1, 3))
+        self.gml_surface_2array = np.reshape(self.gml_surface, (-1, 3))
         self.creationDate = None
 
         self.surface_area = self.get_gml_area()
         self.surface_orientation = self.get_gml_orientation()
         self.surface_tilt = self.get_gml_tilt()
+
+        if self.surface_type is None:
+            if self.surface_tilt == 0.0 and self.surface_orientation == -2:
+                self.surface_type = "GroundSurface"
+            elif self.surface_tilt == 90.0:
+                self.surface_type = "WallSurface"
+            else:
+                self.surface_type = "RoofSurface"
 
     def get_gml_area(self):
         """calc the area of a gml_surface defined by gml coordinates

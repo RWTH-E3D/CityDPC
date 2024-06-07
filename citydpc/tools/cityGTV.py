@@ -8,24 +8,23 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pyStadt.dataset import Dataset
-    from pyStadt.core.obejcts.abstractBuilding import AbstractBuilding
-    from pyStadt.core.obejcts.surfacegml import SurfaceGML
-    from pyproj import Proj
+    from citydpc.dataset import Dataset
+    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.obejct.surfacegml import SurfaceGML
 
 import copy
-from pyproj import transform
+from pyproj import Transformer
 from math import sin, cos
 import numpy as np
 
 
 def transform_dataset(
     dataset: Dataset,
-    inProj: Proj,
-    outProj: Proj,
+    inProj: str,
+    outProj: str,
     refPIn: list,
     refPOut: list,
-    newSrsName: str,
+    newSrsName: str = None,
     rotAngle: float = 0,
     eleChange: float = 0,
     inplace: bool = False,
@@ -35,17 +34,18 @@ def transform_dataset(
     Parameters
     ----------
     dataset : Dataset
-        pyStadt dataset
-    inProj : Proj
-        pyproj.Proj projection of inital coordinate system
-    outProj : Proj
-        pyproj.Proj projection of wanted coordinate system
+        CityDPC dataset
+    inProj : str
+        input projection string (compatible with pyproj)
+    outProj : str
+        output projection string (compatible with pyproj)
     refPIn : tuple
         reference point in input CRS
     refPOut : tuple
         reference point in output CRS
-    newSrsName : str
-        str of new srsName for CityGML files
+    newSrsName : str, optional
+        str of new srsName for CityGML files (if not given equal to outProj),
+        by default None
     rotAngle : float, optional
        rotation angle arount pivotPoint, by default 0
     eleChange : float, optional
@@ -56,7 +56,7 @@ def transform_dataset(
     Returns
     -------
     Dataset
-        pyStadt dataset after transformation
+        citydpc dataset after transformation
     """
 
     if inplace:
@@ -64,29 +64,29 @@ def transform_dataset(
     else:
         newDataset = copy.deepcopy(dataset)
 
-    resX, resY = transform(inProj, outProj, refPIn[0], refPIn[1])
+    transformer = Transformer.from_crs(inProj, outProj)
+    resX, resY = transformer.transform(refPIn[0], refPIn[1])
     pivT = [resX, resY]
 
     offset = np.subtract(np.array(refPOut), np.array(pivT))
 
     # transform buildings
     for building in newDataset.get_building_list():
-        _transform_abstractBuilding(
-            building, inProj, outProj, offset, rotAngle, eleChange
-        )
+        _transform_abstractBuilding(building, transformer, offset, rotAngle, eleChange)
         for buildingPart in building.get_building_parts():
             _transform_abstractBuilding(
-                buildingPart, inProj, outProj, offset, rotAngle, eleChange
+                buildingPart, transformer, offset, rotAngle, eleChange
             )
 
     # transform file info
     for file in newDataset._files:
-        [x0, y0] = file.lowerCorner
-        res_x, res_y = transform(inProj, outProj, x0, y0)
-        file.lowerCorner = (res_x, res_y)
-        [x1, y1] = file.upperCorner
-        res_x, res_y = transform(inProj, outProj, x1, y1)
-        file.upperCorner = (res_x, res_y)
+        if file.lowerCorner and file.upperCorner:
+            [x0, y0] = file.lowerCorner
+            res_x, res_y = transformer.transform(x0, y0)
+            file.lowerCorner = (res_x, res_y)
+            [x1, y1] = file.upperCorner
+            res_x, res_y = transformer.transform(x1, y1)
+            file.upperCorner = (res_x, res_y)
 
     newDataset.srsName = newSrsName
 
@@ -95,8 +95,7 @@ def transform_dataset(
 
 def _transform_abstractBuilding(
     building: AbstractBuilding,
-    inProj: Proj,
-    outProj: Proj,
+    transformer: Transformer,
     offset: list,
     rotAngle: float,
     eleChange: float,
@@ -107,10 +106,8 @@ def _transform_abstractBuilding(
     ----------
     building : AbstractBuilding
         either Building or BuildingPart object to transform
-    inProj : Proj
-        pyproj.Proj projection of inital coordinate system
-    outProj : Proj
-        pyproj.Proj projection of wanted coordinate system
+    transfromer : Transformer
+        pyproj.Transformer object for transformation
     offset : list
         offset for transformation
     rotAngle : float
@@ -118,31 +115,24 @@ def _transform_abstractBuilding(
     eleChange : float
         relative elevation change
     """
-    pivot = _get_surface_min_max_avg(list(building.roofs.values())[0])
-    resX, resY = transform(inProj, outProj, pivot[0], pivot[1])
+    pivot = _get_surface_min_max_avg(building.get_surfaces(["RoofSurface"])[0])
+    resX, resY = transformer.transform(pivot[0], pivot[1])
     pivot = [resX + offset[0], resY + offset[1]]
 
-    for surfaceDict in [
-        building.roofs,
-        building.grounds,
-        building.walls,
-        building.closure,
-    ]:
-        for surface in surfaceDict.values():
-            # update gml surface element
-            surface.gml_surface = _transform_posList(
-                surface.gml_surface,
-                inProj,
-                outProj,
-                pivot,
-                offset,
-                rotAngle,
-                eleChange,
-            )
-            surface.gml_surface_2array = np.reshape(surface.gml_surface, (-1, 3))
-            surface.get_gml_area()
-            surface.get_gml_orientation()
-            surface.get_gml_tilt()
+    for surface in building.get_surfaces():
+        # update gml surface element
+        surface.gml_surface = _transform_posList(
+            surface.gml_surface,
+            transformer,
+            pivot,
+            offset,
+            rotAngle,
+            eleChange,
+        )
+        surface.gml_surface_2array = np.reshape(surface.gml_surface, (-1, 3))
+        surface.get_gml_area()
+        surface.get_gml_orientation()
+        surface.get_gml_tilt()
 
     # delete terrainIntersection
     building.terrainIntersections = None
@@ -150,8 +140,7 @@ def _transform_abstractBuilding(
 
 def _transform_posList(
     posList: np.ndarray,
-    inProj: Proj,
-    outProj: Proj,
+    transformer: Transformer,
     pivot: list,
     offset: list,
     rotAngle: float,
@@ -163,10 +152,8 @@ def _transform_posList(
     ----------
     posList : np.ndarray
         array of coordinates (1D array)
-    inProj : Proj
-        pyproj.Proj projection of inital coordinate system
-    outProj : Proj
-        pyproj.Proj projection of wanted coordinate system
+    transformer : Transformer
+        pyproj.Transformer object for transformation
     pivot : list
         pivot point
     offset : list
@@ -184,7 +171,7 @@ def _transform_posList(
     newPosList = []
     # iterate over coordinates and transform points
     for k in range(int(len(posList) / 3)):
-        res_x, res_y = transform(inProj, outProj, posList[3 * k], posList[3 * k + 1])
+        res_x, res_y = transformer.transform(posList[3 * k], posList[3 * k + 1])
         res_x = res_x + offset[0]
         res_y = res_y + offset[1]
         dx = (res_x - pivot[0]) * cos(rotAngle) - (res_y - pivot[1]) * sin(rotAngle)
@@ -223,7 +210,7 @@ def validate_dataset(dataset: Dataset) -> dict:
     Parameters
     ----------
     dataset : Dataset
-        pyStadt Dataset
+        CityDPC Dataset
 
     Returns
     -------
@@ -259,14 +246,8 @@ def _validate_abstractBuilding(building: AbstractBuilding) -> dict:
     """
 
     valResult = {}
-    for surfaceDict in [
-        building.roofs,
-        building.grounds,
-        building.walls,
-        building.closure,
-    ]:
-        for id, surface in surfaceDict.items():
-            valResult[id] = _validate_polygon(surface)
+    for surface in building.get_surfaces():
+        valResult[surface.surface_id] = _validate_polygon(surface)
     return valResult
 
 
@@ -534,7 +515,7 @@ def _calc_dist_to_plane(p0: list, p1: list, p2: list, pt: list) -> float:
     return distance
 
 
-def _is_poly_planar_DSTP(polyPoints: list, tol: float = 0.1) -> tuple(bool, float):
+def _is_poly_planar_DSTP(polyPoints: list, tol: float = 0.1) -> list[bool, float]:
     """203: NON_PLANAR_POLYGON_DISTANCE_PLANE
 
     Parameters
@@ -612,7 +593,7 @@ def _calculate_angle_deviation(p0: list, p1: list, p2: list, p3: list) -> float:
 
 def _is_poly_planar_normal(
     polyPoints: list, tolInDegree: float = 9
-) -> tuple(bool, float):
+) -> list[bool, float]:
     """
     204: NON_PLANAR_POLYGON_NORMALS_DEVIATION,
     checks if the max angel deviation < tolInDegree
