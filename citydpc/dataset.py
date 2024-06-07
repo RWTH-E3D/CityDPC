@@ -60,6 +60,9 @@ class Dataset:
         """
         return list(self.buildings.values())
 
+    def get_building_by_id(self, id: str) -> Building:
+        return self.buildings[id]
+
 
 def join_datasets(
     left: Dataset,
