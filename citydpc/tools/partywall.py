@@ -146,8 +146,6 @@ def _find_party_walls(
     party_walls = []
     b_0_surfaces = buildingLike_0.get_surfaces(["WallSurface", "ClosureSurface"])
     b_1_surfaces = buildingLike_1.get_surfaces(["WallSurface", "ClosureSurface"])
-    if buildingLike_1.gml_id.endswith("0004oX"):
-        print("important")
     # b_0_normvectors = _coor_dict_to_normvector_dict(b_0_surfaces)
     # b_1_normvectors = _coor_dict_to_normvector_dict(b_1_surfaces)
     for surface_0 in b_0_surfaces:
@@ -251,14 +249,10 @@ def _find_party_walls(
                                     threeD_contact,
                                 ]
                             )
-                            if buildingLike_1.gml_id.endswith("0004oX"):
-                                print("party wall")
                             if not hitS0:
                                 buildingLike_0.freeWalls -= 1
                             if not hitS1:
                                 buildingLike_1.freeWalls -= 1
-                                if buildingLike_1.gml_id.endswith("0004oX"):
-                                    print("reduced")
                             hitS0 = True
                             hitS1 = True
 
@@ -281,14 +275,10 @@ def _find_party_walls(
                                             threeD_contact,
                                         ]
                                     )
-                                    if buildingLike_1.gml_id.endswith("0004oX"):
-                                        print("party wall")
                                     if not hitS0:
                                         buildingLike_0.freeWalls -= 1
                                     if not hitS1:
                                         buildingLike_1.freeWalls -= 1
-                                        if buildingLike_1.gml_id.endswith("0004oX"):
-                                            print("reduced")
                                     hitS0 = True
                                     hitS1 = True
 
