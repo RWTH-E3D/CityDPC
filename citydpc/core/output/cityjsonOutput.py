@@ -184,7 +184,7 @@ def __create_cityobjects_dict(
         if building.has_building_parts():
             for building_part in building.get_building_parts():
                 cityobjects[building_part.gml_id], vertices = __create_cityobject_dict(
-                    dataset, building_part, transformOld, transfromNew
+                    dataset, building_part, transformOld, transfromNew, vertices
                 )
 
     return cityobjects, vertices
