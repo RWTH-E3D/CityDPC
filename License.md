@@ -1,5 +1,5 @@
 MIT License
-Copyright (c) 2023  RWTH Aachen University, E3D, Institute for Energy Efficiency and Sustainable Building
+Copyright (c) 2024  RWTH Aachen University, E3D, Institute for Energy Efficiency and Sustainable Building
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
