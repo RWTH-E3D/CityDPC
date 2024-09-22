@@ -1,8 +1,10 @@
 # CityDPC
 
-CityDPC is a python package for working with CityGML (and soon CityJSON) files.
+CityDPC: A Python Library for 3D City Model Processing
 
+CityDPC is an open-source Python library designed for handling and analyzing 3D city models in CityGML and CityJSON formats. It provides tools for geometric computations, including identifying shared walls between buildings—critical for urban energy simulations. The library enables the loading, validation, and manipulation of city datasets, supporting applications like Urban Building Energy Modeling (UBEM). CityDPC integrates with UBEM tools like TEASER+, streamlining urban-scale energy assessments by efficiently processing and analyzing large building datasets.
 
+![](img/structure.png)
 ## Getting started
 
 First start by cloning the repo.
