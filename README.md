@@ -31,8 +31,9 @@ If you want to contribute have a look over at the [issues](https://gitlab.e3d.rw
 #### Fromatting & Linting
 The code is formatted using [Python Black](https://github.com/psf/black) and linted using [flake8](https://github.com/PyCQA/flake8).
 
-## Authors and acknowledgment
-Lorem ipsum
+## Acknowledgment
+We gratefully acknowledge the financial support by BMWK, promotional reference 03EWR010B.
+
 
 ## License
 Available under the MIT [License](License.md).
