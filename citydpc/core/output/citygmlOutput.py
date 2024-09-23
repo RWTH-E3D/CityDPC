@@ -45,6 +45,7 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
     # creating new namespacemap
     newNSmap = dict(nClass.__dict__)
     del newNSmap["__doc__"]
+    del newNSmap["__module__"]
 
     # creating new root element
     nroot_E = ET.Element(ET.QName(nClass.core, "CityModel"), nsmap=newNSmap)
