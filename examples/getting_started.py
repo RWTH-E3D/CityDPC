@@ -19,7 +19,7 @@ from citydpc.core.input.citygmlInput import load_buildings_from_xml_file
 load_buildings_from_xml_file(newDataset, "examples/files/EssenExample.gml")
 
 # get the number of buildings in the Dataset
-number_of_buildings = newDataset.size()
+number_of_buildings = len(newDataset)
 
 # you can get some more info (e.g. gml_version, crs, LoD)
 # using the analysis function
@@ -89,9 +89,10 @@ dataCombine = cityATB.search_dataset(
     addressRestriciton={"thoroughfareName": "Stakenholt"},
 )
 
+
 # if you want to save your changes you need the respective exporter
 # for CityGML use:
-print(len(dataCombine.get_building_list()))
+print(len(dataCombine))
 from citydpc.core.output.citygmlOutput import write_citygml_file
 
 write_citygml_file(dataCombine, "newFilename.gml")
