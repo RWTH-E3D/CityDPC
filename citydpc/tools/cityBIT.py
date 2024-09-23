@@ -47,6 +47,8 @@ def create_LoD2_building(
     Building
         LoD2 building
     """
+    if not isinstance(id, str):
+        raise ValueError("id must be a string")
     groundSurface = cBU.create_flat_surface(id, groundsCoordinates, groundSurfaceHeight)
     # make sure that same coordiantes are used as in groundSurface object
     # (regarding order, dropped coorindates)
@@ -105,6 +107,10 @@ def create_LoD2_building(
                     "roofOrientation must be an integer between 0 and"
                     + " 3 (both included)"
                 )
+    else:
+        raise ValueError(
+            "roofType must be one of ['1000', '1010', '1020', '1030', '1040', '1070']"
+        )
 
     # start building creation process
     building = Building(id)
@@ -195,6 +201,8 @@ def create_LoD0_building(
     groundSurfaceHeight : float
         height of ground surface
     """
+    if not isinstance(id, str):
+        raise ValueError("id must be a string")
     mainSurface = cBU.create_flat_surface(
         id, groundsCoordinates, groundSurfaceHeight, isRoofEdge
     )
