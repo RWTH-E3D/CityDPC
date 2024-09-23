@@ -33,14 +33,7 @@ class Dataset:
         else:
             self.transform = {}
 
-        logger.warning(
-            "The dictionaries 'walls', 'roofs', 'grounds' and 'closures' "
-            + "buildings and buildingParts will be deprecated. Use "
-            + "'get_surfaces' instead. "
-            + "(e.g. get_surfaces(surfaceTypes=['WallSurface']))"
-        )
-
-    def size(self) -> int:
+    def __len__(self) -> int:
         """return the number of buildings within the dataset
 
         Returns
@@ -62,6 +55,33 @@ class Dataset:
 
     def get_building_by_id(self, id: str) -> Building:
         return self.buildings[id]
+
+    def add_building(self, building: Building, force: bool = False) -> None:
+        """add a building to the dataset
+
+        Parameters
+        ----------
+        building : Building
+            building to be added
+        force : bool, optional
+            overwrite building if it already exists, by default False
+        """
+        if building.gml_id in self.buildings:
+            logger.warning(
+                f"Building with id {building.gml_id} already exists in dataset"
+            )
+            if not force:
+                return
+        self.__setitem__(building.gml_id, building)
+
+    def __getitem__(self, key: str) -> Building:
+        return self.buildings[key]
+
+    def __setitem__(self, key: str, value: Building) -> None:
+        if key == value.gml_id:
+            self.buildings[key] = value
+        else:
+            raise ValueError("key must be equal to value.gml_id")
 
 
 def join_datasets(
