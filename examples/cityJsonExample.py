@@ -10,7 +10,7 @@ x = "examples/files/twobuildings.city.json"
 load_buildings_from_json_file(newDataset, x)
 
 # get the number of buildings in the Dataset
-print(newDataset.size())
+print(len(newDataset))
 
 # do some operations here
 
