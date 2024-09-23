@@ -135,24 +135,24 @@ def join_datasets(
         if operation == "inner":
             leftCopy = left.copy()
             for building in left.get_building_list():
-                if building.id not in right.buildings:
-                    del leftCopy.buildings[building.id]
+                if building.gml_id not in right.buildings:
+                    del leftCopy.buildings[building.gml_id]
             return leftCopy
         elif operation == "outer":
             leftCopy = left.copy()
             for building in right.get_building_list():
-                if building.id not in leftCopy.buildings:
-                    leftCopy.buildings[building.id] = building.copy()
+                if building.gml_id not in leftCopy.buildings:
+                    leftCopy.buildings[building.gml_id] = building.copy()
                 else:
                     logger.warning(
-                        f"Building with id {building.id} already exists in left dataset"
+                        f"Building with id {building.gml_id} already exists in left dataset"
                     )
             return leftCopy
         elif operation == "outerExcludingInner":
             leftCopy = left.copy()
             for building in right.get_building_list():
-                if building.id not in leftCopy.buildings:
-                    leftCopy.buildings[building.id] = building.copy()
+                if building.gml_id not in leftCopy.buildings:
+                    leftCopy.buildings[building.gml_id] = building.copy()
                 else:
-                    del leftCopy.buildings[building.id]
+                    del leftCopy.buildings[building.gml_id]
             return leftCopy
