@@ -110,46 +110,30 @@ def search_dataset(
     else:
         border = None
 
-    for file in newDataset._files:
-        if (
-            border is not None
-            and file.lowerCorner is not None
-            and file.upperCorner is not None
-        ):
-            [x0, y0] = file.lowerCorner
-            [x1, y1] = file.upperCorner
-            fileEnvelopeCoor = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    toDelete = []
+    uncheckedBIDs = list(newDataset.buildings.keys())
+    for building_id in uncheckedBIDs:
 
-            # envelope is outside border
-            if not _border_check(border, borderCoordinates, fileEnvelopeCoor):
-                for building_id in file.building_ids:
-                    del newDataset.buildings[building_id]
-                newDataset._files.remove(file)
+        if border is not None:
+            res = check_if_building_in_coordinates(
+                newDataset.buildings[building_id], borderCoordinates, border
+            )
+
+            if not res:
+                toDelete.append(building_id)
                 continue
 
-        toDelete = []
-        for building_id in file.building_ids:
-            if border is not None:
-                res = check_if_building_in_coordinates(
-                    newDataset.buildings[building_id], borderCoordinates, border
-                )
+        if addressRestriciton is not None:
+            res = check_building_for_address(
+                newDataset.buildings[building_id], addressRestriciton
+            )
 
-                if not res:
-                    toDelete.append(building_id)
-                    continue
+            if not res:
+                toDelete.append(building_id)
+                continue
 
-            if addressRestriciton is not None:
-                res = check_building_for_address(
-                    newDataset.buildings[building_id], addressRestriciton
-                )
-
-                if not res:
-                    toDelete.append(building_id)
-                    continue
-
-        for building_id in toDelete:
-            del newDataset.buildings[building_id]
-            file.building_ids.remove(building_id)
+    for building_id in toDelete:
+        del newDataset.buildings[building_id]
 
     return newDataset
 
