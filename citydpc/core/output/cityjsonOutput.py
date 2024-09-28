@@ -17,6 +17,7 @@ def write_cityjson_file(
     dataset: Dataset,
     filename: str,
     version: str = "2.0",
+    cityJSONSeq: bool = False,
     identifier: str = None,
     pointOfContact: dict = {},
     referenceDate: str = None,
@@ -73,21 +74,38 @@ def write_cityjson_file(
         transfromOld = dataset.transform
     else:
         transfromOld = {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+
     vertices = []
     # add the cityobjects
-    cityjson["CityObjects"], vertices = __create_cityobjects_dict(
-        dataset, transfromOld, transfromNew, vertices
+    objectsOrFeatures, vertices = __create_cityobjects_dict(
+        dataset, transfromOld, transfromNew, vertices, cityJSONSeq
     )
+
     cityjson["metadata"]["geographicalExtent"] = [*dataset._minimum, *dataset._maximum]
 
     cityjson["transform"] = transfromNew
 
-    # add the vertices
-    cityjson["vertices"] = vertices
+    if cityJSONSeq:
+        # write the file as new line delimited json
+        with open(filename, "w") as f:
+            # write the cityjson dict
+            json.dump(cityjson, f)
+            # write the new line
+            f.write("\n")
+            for feature in objectsOrFeatures:
+                # write the feature dict
+                json.dump(feature, f)
+                # write the new line
+                f.write("\n")
 
-    # write the file
-    with open(filename, "w") as f:
-        json.dump(cityjson, f, indent=2)
+    else:
+        cityjson["CityObjects"] = objectsOrFeatures
+        # add the vertices
+        cityjson["vertices"] = vertices
+
+        # write the file
+        with open(filename, "w") as f:
+            json.dump(cityjson, f, indent=2)
 
 
 def __create_metadata_dict(
@@ -153,7 +171,8 @@ def __create_cityobjects_dict(
     transformOld: dict,
     transfromNew: dict,
     vertices: list[list[float]],
-) -> list[dict, list[list[float]]]:
+    cityJSONSeq: bool,
+) -> tuple[dict | list, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters
@@ -169,14 +188,20 @@ def __create_cityobjects_dict(
 
     Returns
     -------
-    dict
-        cityobject dict
+    dict | list
+        either a dict of cityobjects or a list of CityJSONFeatures
+    list
+        list of vertices
     """
 
     cityobjects = {}
+    features = []
 
     # add the cityobjects
     for building in dataset.get_building_list():
+        if cityJSONSeq:
+            vertices = []
+            cityobjects = {}
         cityobjects[building.gml_id], vertices = __create_cityobject_dict(
             dataset, building, transformOld, transfromNew, vertices
         )
@@ -187,6 +212,17 @@ def __create_cityobjects_dict(
                     dataset, building_part, transformOld, transfromNew, vertices
                 )
 
+        if cityJSONSeq:
+            features.append({
+                "type": "CityJSONFeature",
+                "id": building.gml_id,
+                "CityObjects": cityobjects,
+                "vertices": vertices,
+            })
+
+    if cityJSONSeq:
+        return features, vertices
+
     return cityobjects, vertices
 
 
@@ -196,7 +232,7 @@ def __create_cityobject_dict(
     transformOld: dict,
     transformNew: dict,
     vertices: list[list[float]],
-) -> list[dict, list[list[float]]]:
+) -> tuple[dict, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters

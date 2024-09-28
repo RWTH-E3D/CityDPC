@@ -16,3 +16,6 @@ print(len(newDataset))
 
 # write the dataset to a cityJSON file
 write_cityjson_file(newDataset, "test.json")
+
+# write the dataset to a CityJSONSeq file
+write_cityjson_file(newDataset, "test.jsonl", cityJSONSeq=True)
