@@ -8,9 +8,17 @@ newDataset = Dataset()
 # load buildings from a cityJSON file
 x = "examples/files/twobuildings.city.json"
 load_buildings_from_json_file(newDataset, x)
+# if you want to load a cityJSONSeq file, set the cityJSONSeq parameter to True
 
 # get the number of buildings in the Dataset
-print(len(newDataset))
+print(f"number of buildings in dataset {len(newDataset)}")
+for building in newDataset.get_building_list():
+    print(f"building id: {building.gml_id}")
+    print(f"#s: {len(building.get_surfaces())}")
+    for bp in building.get_building_parts():
+        print(f"bp id: {bp.gml_id}")
+        print(f"#s: {len(bp.get_surfaces())}")
+    print()
 
 # do some operations here
 

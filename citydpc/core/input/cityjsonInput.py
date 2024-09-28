@@ -28,6 +28,7 @@ def load_buildings_from_json_file(
     dontTransform: bool = False,
     ignoreExistingTransform: bool = False,
     updatePartyWalls: bool = False,
+    cityJSONSeq: bool = False,
 ) -> None:
     """adds buldings from filepath to dataset
 
@@ -56,8 +57,14 @@ def load_buildings_from_json_file(
     supportedVersions = ["1.0", "1.1", "2.0"]
     requiredMembers = ["type", "version", "transform", "CityObjects", "vertices"]
 
-    with open(filepath, "r") as f:
-        data = json.load(f)
+    if cityJSONSeq:
+        with open(filepath, "r") as f:
+            listOfDicts = [json.loads(line) for line in f]
+        data = listOfDicts[0]
+        data["CityJSONFeatures"] = listOfDicts[1:]
+    else:
+        with open(filepath, "r") as f:
+            data = json.load(f)
 
     for requiredKey in requiredMembers:
         if requiredKey not in data.keys():
@@ -115,52 +122,18 @@ def load_buildings_from_json_file(
                 )
 
     # transform all vertices to global coordinates
-    vertices = data["vertices"]
     if not dontTransform:
-        if (
-            dataset.transform == {}
-            or dataset.transform == {"scale": [1, 1, 1], "translate": [0, 0, 0]}
-            or ignoreExistingTransform
-        ):
-            for vertex in vertices:
-                vertex[0] = (
-                    round(
-                        vertex[0] * data["transform"]["scale"][0]
-                        + data["transform"]["translate"][0]
-                    ),
-                    3,
-                )
-                vertex[1] = (
-                    round(
-                        vertex[1] * data["transform"]["scale"][1]
-                        + data["transform"]["translate"][1]
-                    ),
-                    3,
-                )
-                vertex[2] = (
-                    round(
-                        vertex[2] * data["transform"]["scale"][2]
-                        + data["transform"]["translate"][2]
-                    ),
-                    3,
-                )
-            if dataset.transform == {}:
-                dataset.transform = data["transform"]
-        else:
-            logger.error(
-                "Trying to add file with differenet transform object than "
-                + "dataset. Either transform or forceIgnore the transformation"
-            )
-            return
+        vertices = _transform_vertices(
+            dataset, data, data["vertices"], ignoreExistingTransform
+        )
     else:
         if dataset.transform != {}:
             if dataset.transform != data["transform"]:
                 if not ignoreExistingTransform:
-                    logger.error(
+                    raise ValueError(
                         "Trying to add file with differenet transform object than "
                         + "dataset. Either transform or forceIgnore the transformation"
                     )
-                    return
         else:
             dataset.transform = data["transform"]
 
@@ -209,6 +182,41 @@ def load_buildings_from_json_file(
             dataset.buildings[id] = newBuilding
             buildingIDs.append(id)
 
+    if cityJSONSeq:
+        for feature in data["CityJSONFeatures"]:
+            # get actual building id
+            id = feature["id"]
+            if feature["CityObjects"][id]["type"] == "Building":
+                vertices = _transform_vertices(
+                    dataset, data, feature["vertices"], ignoreExistingTransform
+                )
+                newBuilding = Building(id)
+                _load_building_information_from_json(newBuilding, feature, vertices)
+                if id in dataset.buildings.keys():
+                    logger.warning(
+                        f"invalid CityJSON file ({filepath}) - duplicate gml_id ({id})"
+                    )
+                    continue
+                for childID in feature["CityObjects"][id]["children"]:
+                    if not feature["CityObjects"][childID]["type"] == "BuildingPart":
+                        logger.warning(
+                            f"Child {childID} of building {id} is not a BuildingPart"
+                        )
+                        continue
+                    newBuildingPart = BuildingPart(childID, newBuilding.gml_id)
+                    _load_building_information_from_json(
+                        newBuildingPart, feature["CityObjects"][childID], vertices
+                    )
+                    newBuilding.building_parts.append(newBuildingPart)
+
+                if not check_building_for_border_and_address(
+                    newBuilding, borderCoordinates, addressRestriciton, border
+                ):
+                    continue
+
+                dataset.buildings[id] = newBuilding
+                buildingIDs.append(id)
+
     newCityFile.building_ids = buildingIDs
     newCityFile.num_notLoaded_CityObjectMembers = len(data["CityObjects"]) - len(
         buildingIDs
@@ -217,6 +225,46 @@ def load_buildings_from_json_file(
     if updatePartyWalls:
         dataset.party_walls = get_party_walls(dataset)
     logger.info(f"finished loading buildings from CityJSON file {filepath}")
+
+
+def _transform_vertices(
+    dataset: Dataset, data: dict, vertices: list[list[float]], ignoreExistingTransform
+) -> list[list[float]]:
+    if (
+        dataset.transform == {}
+        or dataset.transform == {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+        or ignoreExistingTransform
+    ):
+        for vertex in vertices:
+            vertex[0] = (
+                round(
+                    vertex[0] * data["transform"]["scale"][0]
+                    + data["transform"]["translate"][0]
+                ),
+                3,
+            )
+            vertex[1] = (
+                round(
+                    vertex[1] * data["transform"]["scale"][1]
+                    + data["transform"]["translate"][1]
+                ),
+                3,
+            )
+            vertex[2] = (
+                round(
+                    vertex[2] * data["transform"]["scale"][2]
+                    + data["transform"]["translate"][2]
+                ),
+                3,
+            )
+        if dataset.transform == {}:
+            dataset.transform = data["transform"]
+    else:
+        raise ValueError(
+            "Trying to add file with differenet transform object than "
+            + "dataset. Either transform or forceIgnore the transformation"
+        )
+    return vertices
 
 
 def _load_building_information_from_json(
