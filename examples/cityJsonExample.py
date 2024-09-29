@@ -23,7 +23,7 @@ for building in newDataset.get_building_list():
 # do some operations here
 
 # write the dataset to a cityJSON file
-write_cityjson_file(newDataset, "test.json")
+write_cityjson_file(newDataset, "test.city.json")
 
 # write the dataset to a CityJSONSeq file
-write_cityjson_file(newDataset, "test.jsonl", cityJSONSeq=True)
+write_cityjson_file(newDataset, "test.city.jsonl", cityJSONSeq=True)
