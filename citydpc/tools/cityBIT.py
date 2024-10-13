@@ -151,6 +151,7 @@ def create_LoD2_building(
             cBU.add_pavilion_roof_and_walls(geometry, id, gC2D, gSH, bHAbs, bWAbs)
 
     building.measuredHeight = geometryHeight
+    building.roofType = str(roofType)
 
     return building
 
