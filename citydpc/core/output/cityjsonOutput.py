@@ -32,7 +32,8 @@ def write_cityjson_file(
     dataset : Dataset
         dataset to be written to a file
     filename : str
-        name of the file to be written
+        name of the file to be written, empty if you want the object(/list of objects)
+        to be returned
     version : str, optional
         version of the cityjson file, by default "2.0"
     identifier : str, optional
@@ -87,6 +88,8 @@ def write_cityjson_file(
 
     if cityJSONSeq:
         # write the file as new line delimited json
+        if filename == "":
+            return [cityjson, objectsOrFeatures]
         with open(filename, "w") as f:
             # write the cityjson dict
             json.dump(cityjson, f)
@@ -102,6 +105,9 @@ def write_cityjson_file(
         cityjson["CityObjects"] = objectsOrFeatures
         # add the vertices
         cityjson["vertices"] = vertices
+
+        if filename == "":
+            return cityjson
 
         # write the file
         with open(filename, "w") as f:
@@ -213,12 +219,14 @@ def __create_cityobjects_dict(
                 )
 
         if cityJSONSeq:
-            features.append({
-                "type": "CityJSONFeature",
-                "id": building.gml_id,
-                "CityObjects": cityobjects,
-                "vertices": vertices,
-            })
+            features.append(
+                {
+                    "type": "CityJSONFeature",
+                    "id": building.gml_id,
+                    "CityObjects": cityobjects,
+                    "vertices": vertices,
+                }
+            )
 
     if cityJSONSeq:
         return features, vertices
