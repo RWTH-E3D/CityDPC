@@ -101,6 +101,8 @@ def load_buildings_from_json_file(
 
         if "title" in data["metadata"].keys():
             newCityFile.gmlName = data["metadata"]["title"]
+            if dataset.title is None:
+                dataset.title = data["metadata"]["title"]
         if "identifier" in data["metadata"].keys():
             newCityFile.identifier = data["metadata"]["identifier"]
         if "referenceSystem" in data["metadata"].keys():

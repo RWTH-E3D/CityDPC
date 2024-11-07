@@ -168,6 +168,8 @@ def __create_metadata_dict(
         )
     if title is not None:
         metadata["title"] = title
+    elif dataset.title is not None:
+        metadata["title"] = dataset.title
 
     return metadata
 
