@@ -191,7 +191,8 @@ def load_buildings_from_json_file(
                     dataset, data, feature["vertices"], ignoreExistingTransform
                 )
                 newBuilding = Building(id)
-                _load_building_information_from_json(newBuilding, feature, vertices)
+                bData = feature["CityObjects"][id]
+                _load_building_information_from_json(newBuilding, bData, vertices)
                 if id in dataset.buildings.keys():
                     logger.warning(
                         f"invalid CityJSON file ({filepath}) - duplicate gml_id ({id})"
@@ -240,25 +241,19 @@ def _transform_vertices(
         or ignoreExistingTransform
     ):
         for vertex in vertices:
-            vertex[0] = (
-                round(
-                    vertex[0] * data["transform"]["scale"][0]
-                    + data["transform"]["translate"][0]
-                ),
+            vertex[0] = round(
+                vertex[0] * data["transform"]["scale"][0]
+                + data["transform"]["translate"][0],
                 3,
             )
-            vertex[1] = (
-                round(
-                    vertex[1] * data["transform"]["scale"][1]
-                    + data["transform"]["translate"][1]
-                ),
+            vertex[1] = round(
+                vertex[1] * data["transform"]["scale"][1]
+                + data["transform"]["translate"][1],
                 3,
             )
-            vertex[2] = (
-                round(
-                    vertex[2] * data["transform"]["scale"][2]
-                    + data["transform"]["translate"][2]
-                ),
+            vertex[2] = round(
+                vertex[2] * data["transform"]["scale"][2]
+                + data["transform"]["translate"][2],
                 3,
             )
         if dataset.transform == {}:
