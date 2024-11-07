@@ -106,11 +106,8 @@ def load_buildings_from_json_file(
         if "referenceSystem" in data["metadata"].keys():
             newCityFile.srsName = data["metadata"]["referenceSystem"]
             if dataset.srsName is None:
-                dataset.srsName = data["metadata"]["referenceSystem"].split("/crs/")[-1]
-            elif (
-                dataset.srsName
-                == data["metadata"]["referenceSystem"].split("/crs/")[-1]
-            ):
+                dataset.srsName = data["metadata"]["referenceSystem"]
+            elif dataset.srsName == data["metadata"]["referenceSystem"]:
                 pass
             elif ignoreRefSytem:
                 pass
