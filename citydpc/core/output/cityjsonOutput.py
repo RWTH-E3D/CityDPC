@@ -271,7 +271,7 @@ def __create_cityobject_dict(
         cityobject["type"] = "BuildingPart"
 
     # add the attributes
-    attributes = {}
+    attributes = building.genericStrings
     for i in [
         "function",
         "usage",
@@ -286,15 +286,14 @@ def __create_cityobject_dict(
         value = getattr(building, i)
         if value is not None:
             attributes[i] = value
-    if attributes != {}:
-        cityobject["attributes"] = attributes
+    cityobject["attributes"] = attributes
 
     if not building.is_building_part and building.has_building_parts():
-        cityobject["attributes"]["buildingParts"] = []
+        cityobject["children"] = []
         for i in building.get_building_parts():
-            cityobject["attributes"]["buildingParts"].append(i.gml_id)
+            cityobject["children"].append(i.gml_id)
     elif building.is_building_part:
-        cityobject["attributes"]["parent"] = [building.parent_gml_id]
+        cityobject["parents"] = [building.parent_gml_id]
 
     if len(building.geometries) > 0:
         cityobject["geometry"] = []
