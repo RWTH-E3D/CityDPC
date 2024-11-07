@@ -197,17 +197,21 @@ def load_buildings_from_json_file(
                         f"invalid CityJSON file ({filepath}) - duplicate gml_id ({id})"
                     )
                     continue
-                for childID in feature["CityObjects"][id]["children"]:
-                    if not feature["CityObjects"][childID]["type"] == "BuildingPart":
-                        logger.warning(
-                            f"Child {childID} of building {id} is not a BuildingPart"
+                if "children" in feature["CityObjects"][id].keys():
+                    for childID in feature["CityObjects"][id]["children"]:
+                        if (
+                            not feature["CityObjects"][childID]["type"]
+                            == "BuildingPart"
+                        ):
+                            logger.warning(
+                                f"{childID} of building {id} is not a BuildingPart"
+                            )
+                            continue
+                        newBuildingPart = BuildingPart(childID, newBuilding.gml_id)
+                        _load_building_information_from_json(
+                            newBuildingPart, feature["CityObjects"][childID], vertices
                         )
-                        continue
-                    newBuildingPart = BuildingPart(childID, newBuilding.gml_id)
-                    _load_building_information_from_json(
-                        newBuildingPart, feature["CityObjects"][childID], vertices
-                    )
-                    newBuilding.building_parts.append(newBuildingPart)
+                        newBuilding.building_parts.append(newBuildingPart)
 
                 if not check_building_for_border_and_address(
                     newBuilding, borderCoordinates, addressRestriciton, border
