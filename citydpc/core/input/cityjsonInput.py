@@ -192,6 +192,8 @@ def load_buildings_from_json_file(
         for feature in data["CityJSONFeatures"]:
             # get actual building id
             id = feature["id"]
+            if allowedIDs is not None and id not in allowedIDs:
+                continue
             if feature["CityObjects"][id]["type"] == "Building":
                 vertices = _transform_vertices(
                     dataset, data, feature["vertices"], ignoreExistingTransform
