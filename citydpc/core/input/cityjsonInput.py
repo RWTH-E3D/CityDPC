@@ -29,6 +29,7 @@ def load_buildings_from_json_file(
     ignoreExistingTransform: bool = False,
     updatePartyWalls: bool = False,
     cityJSONSeq: bool = False,
+    allowedIDs: list[str] = None,
 ) -> None:
     """adds buldings from filepath to dataset
 
@@ -52,6 +53,10 @@ def load_buildings_from_json_file(
         by default False
     updatePartyWalls : bool, optional
         flag to update party walls, by default False
+    cityJSONSeq : bool, optional
+        flag to indicate if file is CityJSONSeq, by default False
+    allowedIDs : list, optional
+        list of allowed building IDs, by default None
     """
     logger.info(f"loading buildings from CityJSON file {filepath}")
     supportedVersions = ["1.0", "1.1", "2.0"]
@@ -139,6 +144,8 @@ def load_buildings_from_json_file(
     buildingIDs = []
 
     for id, value in data["CityObjects"].items():
+        if allowedIDs is not None and id not in allowedIDs:
+            continue
         if value["type"] == "Building":
             newBuilding = Building(id)
             _load_building_information_from_json(newBuilding, value, vertices)
