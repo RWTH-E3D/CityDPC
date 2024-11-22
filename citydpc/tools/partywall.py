@@ -334,8 +334,10 @@ def _get_collision_unrotated(
     n = []
     for x, y in zip(xx.tolist(), yy.tolist()):
         n.append([x, target_y, y])
-    if type(rot_angle) is not None:
-        return _rotate_polygon_around_point_in_x_y(n, rotation_center, -rot_angle)
+    if rot_angle is not None:
+        return _rotate_polygon_around_point_in_x_y(
+            n, rotation_center, -rot_angle
+        )
     else:
         return n
 
