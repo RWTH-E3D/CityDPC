@@ -78,8 +78,8 @@ def _process_metadata(
     data: dict,
     dataset: Dataset,
     city_file: CityFile,
-    border_coordinates: list = None,
-    ignore_ref_system: bool = False,
+    borderCoordinates: list = None,
+    ignoreRefSystem: bool = False,
 ) -> tuple:
     """Process CityJSON metadata and update dataset and city_file accordingly.
 
@@ -101,14 +101,14 @@ def _process_metadata(
         city_file.lowerCorner = metadata["geographicalExtent"][0:3]
         city_file.upperCorner = metadata["geographicalExtent"][3:6]
 
-        if border_coordinates is not None:
+        if borderCoordinates is not None:
             file_envelope_coor = [
                 city_file.lowerCorner[0:2],
                 city_file.upperCorner[0:2],
             ]
-            border = mplP.Path(np.array(border_coordinates))
+            border = mplP.Path(np.array(borderCoordinates))
             if not _border_check(
-                border, border_coordinates, file_envelope_coor
+                border, borderCoordinates, file_envelope_coor
             ):
                 return None, True
 
@@ -123,7 +123,7 @@ def _process_metadata(
 
     if "referenceSystem" in metadata:
         if not _handle_reference_system(
-            dataset, metadata["referenceSystem"], ignore_ref_system
+            dataset, metadata["referenceSystem"], ignoreRefSystem
         ):
             return None, True
         city_file.srsName = metadata["referenceSystem"]
@@ -132,7 +132,7 @@ def _process_metadata(
 
 
 def _handle_reference_system(
-    dataset: Dataset, newSrs: str, ignore_ref_system: bool
+    dataset: Dataset, newSrs: str, ignoreRefSystem: bool
 ) -> bool:
     """Handle reference system compatibility checking."""
     if dataset.srsName is None:
@@ -140,7 +140,7 @@ def _handle_reference_system(
         return True
     elif dataset.srsName == newSrs:
         return True
-    elif ignore_ref_system:
+    elif ignoreRefSystem:
         return True
     else:
         logger.error(
@@ -154,26 +154,26 @@ def _process_building(
     building_id: str,
     building_data: dict,
     vertices: list,
-    city_objects: dict,
-    city_gml_version: str,
+    cityObjects: dict,
+    cityJSONversion: str,
 ) -> Building:
     """Process a single building and its parts from CityJSON data."""
     new_building = Building(building_id)
     _load_building_information_from_json(new_building, building_data, vertices)
 
     bp_key = (
-        "members" if city_gml_version.split("v")[1] == "1.0" else "children"
+        "members" if cityJSONversion.split("v")[1] == "1.0" else "children"
     )
 
     if bp_key in building_data:
         for child in building_data[bp_key]:
-            if child in city_objects:
-                if city_objects[child]["type"] == "BuildingPart":
+            if child in cityObjects:
+                if cityObjects[child]["type"] == "BuildingPart":
                     new_building_part = BuildingPart(
                         child, new_building.gml_id
                     )
                     _load_building_information_from_json(
-                        new_building_part, city_objects[child], vertices
+                        new_building_part, cityObjects[child], vertices
                     )
                     new_building.building_parts.append(new_building_part)
                 else:
@@ -194,13 +194,13 @@ def load_buildings_from_dict(
     dataset: Dataset,
     cityjson_data: dict,
     features: list[dict] = None,
-    border_coordinates: list = None,
-    address_restriction: dict = None,
-    ignore_ref_system: bool = False,
-    dont_transform: bool = False,
-    ignore_existing_transform: bool = False,
-    update_party_walls: bool = False,
-    allowed_ids: list[str] = None,
+    borderCoordinates: list = None,
+    addressRestriction: dict = None,
+    ignoreRefSystem: bool = False,
+    dontTransform: bool = False,
+    ignoreExistingTransform: bool = False,
+    updatePartyWalls: bool = False,
+    allowedIDs: list[str] = None,
 ) -> None:
     """Adds buildings from CityJSON dictionary data to dataset.
 
@@ -227,25 +227,25 @@ def load_buildings_from_dict(
         cityjson_data,
         dataset,
         new_city_file,
-        border_coordinates,
-        ignore_ref_system,
+        borderCoordinates,
+        ignoreRefSystem,
     )
     if should_return:
         return
 
-    if not dont_transform:
+    if not dontTransform:
         vertices = _transform_vertices(
             dataset,
             cityjson_data,
             cityjson_data["vertices"],
-            ignore_existing_transform,
+            ignoreExistingTransform,
         )
     else:
         if (
             dataset.transform
             and dataset.transform != cityjson_data["transform"]
         ):
-            if not ignore_existing_transform:
+            if not ignoreExistingTransform:
                 raise ValueError(
                     "Trying to add data with different transform object than "
                     + "dataset. Either transform or set "
@@ -258,7 +258,7 @@ def load_buildings_from_dict(
     building_ids = []
 
     for building_id, value in cityjson_data["CityObjects"].items():
-        if allowed_ids is not None and building_id not in allowed_ids:
+        if allowedIDs is not None and building_id not in allowedIDs:
             continue
 
         if value["type"] == "Building":
@@ -275,7 +275,7 @@ def load_buildings_from_dict(
                 continue
 
             if not check_building_for_border_and_address(
-                new_building, border_coordinates, address_restriction, border
+                new_building, borderCoordinates, addressRestriction, border
             ):
                 continue
 
@@ -285,7 +285,7 @@ def load_buildings_from_dict(
     if features:
         for feature in features:
             building_id = feature["id"]
-            if allowed_ids is not None and building_id not in allowed_ids:
+            if allowedIDs is not None and building_id not in allowedIDs:
                 continue
 
             if feature["CityObjects"][building_id]["type"] == "Building":
@@ -294,9 +294,9 @@ def load_buildings_from_dict(
                         dataset,
                         cityjson_data,
                         feature["vertices"],
-                        ignore_existing_transform,
+                        ignoreExistingTransform,
                     )
-                    if not dont_transform
+                    if not dontTransform
                     else feature["vertices"]
                 )
 
@@ -314,8 +314,8 @@ def load_buildings_from_dict(
 
                 if not check_building_for_border_and_address(
                     new_building,
-                    border_coordinates,
-                    address_restriction,
+                    borderCoordinates,
+                    addressRestriction,
                     border,
                 ):
                     continue
@@ -330,7 +330,7 @@ def load_buildings_from_dict(
     ) - len(building_ids)
     dataset._files.append(new_city_file)
 
-    if update_party_walls:
+    if updatePartyWalls:
         dataset.party_walls = get_party_walls(dataset)
 
     logger.info("finished loading buildings from CityJSON dictionary")
@@ -339,14 +339,14 @@ def load_buildings_from_dict(
 def load_buildings_from_json_file(
     dataset: Dataset,
     filepath: str,
-    border_coordinates: list = None,
-    address_restriction: dict = None,
-    ignore_ref_system: bool = False,
-    dont_transform: bool = False,
-    ignore_existing_transform: bool = False,
-    update_party_walls: bool = False,
+    borderCoordinates: list = None,
+    addressRestriction: dict = None,
+    ignoreRefSystem: bool = False,
+    dontTransform: bool = False,
+    ignoreExistingTransform: bool = False,
+    updatePartyWalls: bool = False,
     cityJSONSeq: bool = False,
-    allowed_ids: list[str] = None,
+    allowedIDs: list[str] = None,
 ) -> None:
     """Loads buildings from a CityJSON file into the dataset.
 
@@ -365,13 +365,13 @@ def load_buildings_from_json_file(
             dataset=dataset,
             cityjson_data=cityjson_data,
             features=features,
-            border_coordinates=border_coordinates,
-            address_restriction=address_restriction,
-            ignore_ref_system=ignore_ref_system,
-            dont_transform=dont_transform,
-            ignore_existing_transform=ignore_existing_transform,
-            update_party_walls=update_party_walls,
-            allowed_ids=allowed_ids,
+            borderCoordinates=borderCoordinates,
+            addressRestriction=addressRestriction,
+            ignoreRefSystem=ignoreRefSystem,
+            dontTransform=dontTransform,
+            ignoreExistingTransform=ignoreExistingTransform,
+            updatePartyWalls=updatePartyWalls,
+            allowedIDs=allowedIDs,
         )
     else:
         with open(filepath, "r") as f:
@@ -386,13 +386,13 @@ def load_buildings_from_json_file(
             dataset=dataset,
             cityjson_data=cityjson_data,
             features=features,
-            border_coordinates=border_coordinates,
-            address_restriction=address_restriction,
-            ignore_ref_system=ignore_ref_system,
-            dont_transform=dont_transform,
-            ignore_existing_transform=ignore_existing_transform,
-            update_party_walls=update_party_walls,
-            allowed_ids=allowed_ids,
+            borderCoordinates=borderCoordinates,
+            addressRestriction=addressRestriction,
+            ignoreRefSystem=ignoreRefSystem,
+            dontTransform=dontTransform,
+            ignoreExistingTransform=ignoreExistingTransform,
+            updatePartyWalls=updatePartyWalls,
+            allowedIDs=allowedIDs,
         )
 
 
