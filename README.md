@@ -7,7 +7,12 @@ CityDPC is an open-source Python library designed for handling and analyzing 3D 
 ![](img/structure.png)
 ## Getting started
 
-First start by cloning the repo.
+If you want to use CityDPC in your workflow you can install it using
+```bash
+pip install git+https://github.com/RWTH-E3D/CityDPC.git
+```
+
+If you want to run the examples, start by cloning the repo.
 Continue by installing the package, while in the root director, using:
 ```bash
 pip install .

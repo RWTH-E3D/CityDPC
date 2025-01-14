@@ -25,6 +25,7 @@ dependencies = [
     "shapely",
     "pyproj",
     "matplotlib",
+    "pandas",
 ]
 
 [project.urls]

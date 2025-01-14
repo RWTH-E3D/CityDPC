@@ -19,6 +19,10 @@ This is an example script shows how party walls
 (adjacent walls) can be detected using the citydpc package.
 Feel free to change the fileName (including path) to 
 visualise your file.
+
+You will need to install PySide6 to run this script.
+
+
 """
 fileName = "examples/files/EssenExample.gml"
 
