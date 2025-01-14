@@ -15,8 +15,8 @@ class Dataset:
 
     """
 
-    def __init__(self, name: str = None, defaultScale=True) -> None:
-        self.name = name
+    def __init__(self, title: str = None, defaultScale=True) -> None:
+        self.title = title
         self._files = []
         self.srsName = None
         self.buildings = {}

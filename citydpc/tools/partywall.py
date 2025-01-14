@@ -51,18 +51,28 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
         if building_0.has_building_parts():
             for b_part in building_0.get_building_parts():
                 if b_part.has_3Dgeometry():
-                    if f"{building_0.gml_id}/{b_part.gml_id}" not in updNumOfWalls:
+                    if (
+                        f"{building_0.gml_id}/{b_part.gml_id}"
+                        not in updNumOfWalls
+                    ):
                         b_part.allWalls = len(
                             b_part.get_surfaces(surfaceTypes=["WallSurface"])
                         )
                         b_part.freeWalls = b_part.allWalls
-                        updNumOfWalls.append(f"{building_0.gml_id}/{b_part.gml_id}")
-                    for groundSurface in b_part.get_surfaces(["GroundSurface"]):
+                        updNumOfWalls.append(
+                            f"{building_0.gml_id}/{b_part.gml_id}"
+                        )
+                    for groundSurface in b_part.get_surfaces(
+                        ["GroundSurface"]
+                    ):
+                        parent = dataset.get_building_by_id(
+                            b_part.parent_gml_id
+                        )
                         polys_in_building_0.append(
                             {
                                 "poly_id": groundSurface.polygon_id,
                                 "coor": groundSurface.gml_surface_2array,
-                                "parent": b_part.gml_id,
+                                "parent": parent,
                             }
                         )
 
@@ -334,8 +344,10 @@ def _get_collision_unrotated(
     n = []
     for x, y in zip(xx.tolist(), yy.tolist()):
         n.append([x, target_y, y])
-    if type(rot_angle) is not None:
-        return _rotate_polygon_around_point_in_x_y(n, rotation_center, -rot_angle)
+    if rot_angle is not None:
+        return _rotate_polygon_around_point_in_x_y(
+            n, rotation_center, -rot_angle
+        )
     else:
         return n
 

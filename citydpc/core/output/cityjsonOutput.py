@@ -8,21 +8,28 @@ if TYPE_CHECKING:
     from citydpc.core.obejct.geometry import GeometryGML
 
 from citydpc.logger import logger
-from citydpc.util.envelope import update_min_max
+from citydpc.util.envelope import (
+    update_min_max_from_surface,
+    update_dataset_min_max_from_min_max,
+    update_min_max_from_min_max,
+)
 
 import json
+import math
 
 
 def write_cityjson_file(
     dataset: Dataset,
     filename: str,
     version: str = "2.0",
+    cityJSONSeq: bool = False,
     identifier: str = None,
     pointOfContact: dict = {},
     referenceDate: str = None,
     referenceSystem: str = None,
     title: str = None,
     transfromNew: dict = {"scale": [1, 1, 1], "translate": [0, 0, 0]},
+    saveGeoExtToBuildings: bool = True,
 ) -> None:
     """writes a dataset to a cityjson file
 
@@ -31,7 +38,8 @@ def write_cityjson_file(
     dataset : Dataset
         dataset to be written to a file
     filename : str
-        name of the file to be written
+        name of the file to be written, empty if you want the object(/list of objects)
+        to be returned
     version : str, optional
         version of the cityjson file, by default "2.0"
     identifier : str, optional
@@ -47,6 +55,8 @@ def write_cityjson_file(
     transfromNew : dict, optional
         export transformation dict
         by default {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+    saveGeoExtToBuildings: bool default True
+        save geographical extent of building as attribute
     """
 
     supportedVersions = ["1.1", "2.0"]
@@ -73,21 +83,48 @@ def write_cityjson_file(
         transfromOld = dataset.transform
     else:
         transfromOld = {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+
     vertices = []
     # add the cityobjects
-    cityjson["CityObjects"], vertices = __create_cityobjects_dict(
-        dataset, transfromOld, transfromNew, vertices
+    objectsOrFeatures, vertices = __create_cityobjects_dict(
+        dataset,
+        transfromOld,
+        transfromNew,
+        vertices,
+        cityJSONSeq,
+        saveGeoExtToBuildings,
     )
+
     cityjson["metadata"]["geographicalExtent"] = [*dataset._minimum, *dataset._maximum]
 
     cityjson["transform"] = transfromNew
 
-    # add the vertices
-    cityjson["vertices"] = vertices
+    if cityJSONSeq:
+        # write the file as new line delimited json
+        if filename == "":
+            return [cityjson, objectsOrFeatures]
+        with open(filename, "w") as f:
+            # write the cityjson dict
+            json.dump(cityjson, f)
+            # write the new line
+            f.write("\n")
+            for feature in objectsOrFeatures:
+                # write the feature dict
+                json.dump(feature, f)
+                # write the new line
+                f.write("\n")
 
-    # write the file
-    with open(filename, "w") as f:
-        json.dump(cityjson, f, indent=2)
+    else:
+        cityjson["CityObjects"] = objectsOrFeatures
+        # add the vertices
+        cityjson["vertices"] = vertices
+
+        if filename == "":
+            return cityjson
+
+        # write the file
+        with open(filename, "w") as f:
+            json.dump(cityjson, f, indent=2)
 
 
 def __create_metadata_dict(
@@ -144,6 +181,8 @@ def __create_metadata_dict(
         )
     if title is not None:
         metadata["title"] = title
+    elif dataset.title is not None:
+        metadata["title"] = dataset.title
 
     return metadata
 
@@ -153,7 +192,9 @@ def __create_cityobjects_dict(
     transformOld: dict,
     transfromNew: dict,
     vertices: list[list[float]],
-) -> list[dict, list[list[float]]]:
+    cityJSONSeq: bool,
+    saveGeographicalExtent: bool = True
+) -> tuple[dict | list, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters
@@ -169,34 +210,64 @@ def __create_cityobjects_dict(
 
     Returns
     -------
-    dict
-        cityobject dict
+    dict | list
+        either a dict of cityobjects or a list of CityJSONFeatures
+    list
+        list of vertices
     """
 
     cityobjects = {}
+    features = []
 
     # add the cityobjects
     for building in dataset.get_building_list():
-        cityobjects[building.gml_id], vertices = __create_cityobject_dict(
-            dataset, building, transformOld, transfromNew, vertices
+        if cityJSONSeq:
+            vertices = []
+            cityobjects = {}
+        cityobjects[building.gml_id], vertices, bMin, bMax = (
+            __create_cityobject_dict(
+                building, transformOld, transfromNew, vertices
+            )
         )
 
         if building.has_building_parts():
             for building_part in building.get_building_parts():
-                cityobjects[building_part.gml_id], vertices = __create_cityobject_dict(
-                    dataset, building_part, transformOld, transfromNew, vertices
+                cityobjects[building_part.gml_id], vertices, bpMin, bpMax = (
+                    __create_cityobject_dict(
+                        building_part, transformOld, transfromNew, vertices
+                    )
                 )
+                bMin, bMax = update_min_max_from_min_max(
+                    bMin, bMax, bpMin, bpMax
+                )
+
+        update_dataset_min_max_from_min_max(dataset, bMin, bMax)
+
+        if saveGeographicalExtent:
+            cityobjects[building.gml_id]["geographicalExtent"] = [*bMin, *bMax]
+
+        if cityJSONSeq:
+            features.append(
+                {
+                    "type": "CityJSONFeature",
+                    "id": building.gml_id,
+                    "CityObjects": cityobjects,
+                    "vertices": vertices,
+                }
+            )
+
+    if cityJSONSeq:
+        return features, vertices
 
     return cityobjects, vertices
 
 
 def __create_cityobject_dict(
-    dataset: Dataset,
     building: AbstractBuilding,
     transformOld: dict,
     transformNew: dict,
     vertices: list[list[float]],
-) -> list[dict, list[list[float]]]:
+) -> tuple[dict, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
     Parameters
@@ -216,9 +287,17 @@ def __create_cityobject_dict(
     -------
     dict
         cityobject dict
+    vertices : list[list[float]]
+        list of vertices
+    bMin : list[float]
+        list of minimums of cityobject
+    bMax : list[float]
+        list of maximums of cityobject
     """
 
     cityobject = {}
+    bMin = [math.inf, math.inf, math.inf]
+    bMax = [-math.inf, -math.inf, -math.inf]
 
     # add the cityobject
     if not building.is_building_part:
@@ -227,7 +306,7 @@ def __create_cityobject_dict(
         cityobject["type"] = "BuildingPart"
 
     # add the attributes
-    attributes = {}
+    attributes = building.genericStrings
     for i in [
         "function",
         "usage",
@@ -242,25 +321,24 @@ def __create_cityobject_dict(
         value = getattr(building, i)
         if value is not None:
             attributes[i] = value
-    if attributes != {}:
-        cityobject["attributes"] = attributes
+    cityobject["attributes"] = attributes
 
     if not building.is_building_part and building.has_building_parts():
-        cityobject["attributes"]["buildingParts"] = []
+        cityobject["children"] = []
         for i in building.get_building_parts():
-            cityobject["attributes"]["buildingParts"].append(i.gml_id)
+            cityobject["children"].append(i.gml_id)
     elif building.is_building_part:
-        cityobject["attributes"]["parent"] = [building.parent_gml_id]
+        cityobject["parents"] = [building.parent_gml_id]
 
     if len(building.geometries) > 0:
         cityobject["geometry"] = []
 
         for geometry in building.geometries.values():
-            cityobject["geometry"].append(
-                __create_geometry_dict(
-                    dataset, geometry, transformOld, transformNew, vertices
-                )
+            geometry, gMin, gMax = __create_geometry_dict(
+                geometry, transformOld, transformNew, vertices
             )
+            cityobject["geometry"].append(geometry)
+            bMin, bMax = update_min_max_from_min_max(bMin, bMax, gMin, gMax)
 
     if not building.address.address_is_empty():
         cityobject["address"] = [{}]
@@ -277,16 +355,15 @@ def __create_cityobject_dict(
             if value is not None:
                 cityobject["address"][0][i] = value
 
-    return cityobject, vertices
+    return cityobject, vertices, bMin, bMax
 
 
 def __create_geometry_dict(
-    dataset: Dataset,
     geometry: GeometryGML,
     transformOld: dict,
     transformNew: dict,
     vertices: list[list[float]],
-) -> dict:
+) -> tuple[dict, list[float], list[float]]:
     """creates the geometry dict for the cityjson file
 
     Parameters
@@ -304,8 +381,12 @@ def __create_geometry_dict(
 
     Returns
     -------
-    dict
+    dict : dict
         geometry dict
+    gMin : list[float]
+        mininums of geometry
+    gMax : list[float]
+        maximums of geometry
     """
 
     geometry_dict = {}
@@ -322,6 +403,8 @@ def __create_geometry_dict(
     surfaces = []
     values = []
 
+    gMin = [math.inf, math.inf, math.inf]
+    gMax = [-math.inf, -math.inf, -math.inf]
     if geometry.type == "CompositeSolid" or geometry.type == "MultiSolid":
         for _, surfaceIDs in geometry.solids.items():
             solidList = []
@@ -330,7 +413,7 @@ def __create_geometry_dict(
             shellValList = []
             for surfaceID in surfaceIDs:
                 surface = geometry.get_surface(surfaceID)
-                update_min_max(dataset, surface)
+                gMin, gMax = update_min_max_from_surface(gMin, gMax, surface)
                 surfaceVerts = __surface_to_vertices(
                     surface, transformOld, transformNew, vertices
                 )
@@ -345,7 +428,7 @@ def __create_geometry_dict(
         solidList = []
         solidValList = []
         for surface in geometry.surfaces:
-            update_min_max(dataset, surface)
+            gMin, gMax = update_min_max_from_surface(gMin, gMax, surface)
             surfaceVerts = __surface_to_vertices(
                 surface, transformOld, transformNew, vertices
             )
@@ -356,7 +439,7 @@ def __create_geometry_dict(
         boundaries.append(solidList)
     elif geometry.type == "MultiSurface" or geometry.type == "CompositeSurface":
         for surface in geometry.surfaces:
-            update_min_max(dataset, surface)
+            gMin, gMax = update_min_max_from_surface(gMin, gMax, surface)
             surfaceVerts = __surface_to_vertices(
                 surface, transformOld, transformNew, vertices
             )
@@ -370,7 +453,7 @@ def __create_geometry_dict(
     if geometry.lod > 1:
         geometry_dict["semantics"] = semantics
 
-    return geometry_dict
+    return geometry_dict, gMin, gMax
 
 
 def __surface_to_vertices(

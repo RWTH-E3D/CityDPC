@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 import lxml.etree as ET
 
 import citydpc.util.citygmlClasses as citygmlClasses
-from citydpc.util.envelope import update_min_max
+from citydpc.util.envelope import update_dataset_min_max_from_surface
 from citydpc.logger import logger
 import uuid
 
@@ -440,7 +440,7 @@ def _add_surfaceMember_to_element(
         attrib={"srsDimension": "3"},
     )
     posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
-    update_min_max(dataset, surface)
+    update_dataset_min_max_from_surface(dataset, surface)
 
 
 def _add_lod_1_geometry_to_xml_building(
@@ -562,7 +562,7 @@ def _add_lod_2_geometry_to_xml_building(
             attrib={"srsDimension": "3"},
         )
         posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
-        update_min_max(dataset, surface)
+        update_dataset_min_max_from_surface(dataset, surface)
 
 
 def _add_lod_2_geometry_to_xml_building_3_0(
@@ -634,7 +634,7 @@ def _add_lod_2_geometry_to_xml_building_3_0(
             attrib={"srsDimension": "3"},
         )
         posList_E.text = __untransform_surface_to_str(surface, dataset.transform)
-        update_min_max(dataset, surface)
+        update_dataset_min_max_from_surface(dataset, surface)
 
     if usedHrefs:
         lodnSolid_E = ET.SubElement(building_E, ET.QName(nClass.core, "lod2Solid"))
