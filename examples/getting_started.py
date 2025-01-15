@@ -12,6 +12,10 @@ from citydpc import Dataset
 # create a Dataset object
 newDataset = Dataset()
 
+# if you want to calculate the volume of the roof on import you need to set:
+from citydpc.core import input
+input.set_roof_volume_calculation(True)
+
 # to load buildings from a file you need the respective importer
 # to add a xml/gml file:
 from citydpc.core.input.citygmlInput import load_buildings_from_xml_file
@@ -44,6 +48,7 @@ for building in newDataset.get_building_list():
         walls = building.get_surfaces(surfaceTypes=["WallSurface"])
         grounds = building.get_surfaces(surfaceTypes=["GroundSurface"])
         roofs = building.get_surfaces(surfaceTypes=["RoofSurface"])
+        print(f"buildingVolume: {building.roof_volume}")
 
         # e.g. to get the area of all roof surfaces
         # you can use the next two lines
@@ -95,5 +100,6 @@ dataCombine = cityATB.search_dataset(
 print(len(dataCombine))
 from citydpc.core.output.citygmlOutput import write_citygml_file
 
+print(dataCombine)
 write_citygml_file(dataCombine, "newFilename.gml")
 # you can choose between CityGML 1.0 and 2.0

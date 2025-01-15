@@ -19,6 +19,7 @@ from citydpc.core.obejct.surfacegml import SurfaceGML
 from citydpc.core.obejct.fileUtil import CityFile
 from citydpc.core.obejct.geometry import GeometryGML
 from citydpc.tools.partywall import get_party_walls
+from . import CALC_ROOF_VOLUME_ON_IMPORT
 
 
 def load_buildings_from_xml_file(
@@ -334,7 +335,8 @@ def _load_building_information_from_xml(
                     extObj_E, nsmap, "core:name"
                 )
 
-    building._calc_roof_volume()
+    if CALC_ROOF_VOLUME_ON_IMPORT:
+        building._calc_roof_volume()
     building.create_legacy_surface_dicts()
 
     address_E = buildingElement.find("bldg:address/core:Address", nsmap)

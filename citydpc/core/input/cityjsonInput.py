@@ -20,6 +20,7 @@ from citydpc.tools.cityATB import (
 )
 from citydpc.logger import logger
 from citydpc.tools.partywall import get_party_walls
+from . import CALC_ROOF_VOLUME_ON_IMPORT
 
 
 def _validate_cityjson_data(
@@ -541,7 +542,9 @@ def _load_building_information_from_json(
                     f"unsupported geometry type ({geometry['type']}) in "
                     + f"{building.gml_id}"
                 )
-        building._calc_roof_volume()
+
+        if CALC_ROOF_VOLUME_ON_IMPORT:
+            building._calc_roof_volume()
         building.create_legacy_surface_dicts()
 
 
