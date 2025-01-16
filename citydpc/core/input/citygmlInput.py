@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from citydpc.dataset import Dataset
-    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
+    from citydpc.core.object.abstractBuilding import AbstractBuilding
 
 
 import lxml.etree as ET
@@ -12,12 +12,12 @@ import matplotlib.path as mplP
 
 from citydpc.logger import logger
 from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
-from citydpc.core.obejct.address import CoreAddress
-from citydpc.core.obejct.building import Building
-from citydpc.core.obejct.buildingPart import BuildingPart
-from citydpc.core.obejct.surfacegml import SurfaceGML
-from citydpc.core.obejct.fileUtil import CityFile
-from citydpc.core.obejct.geometry import GeometryGML
+from citydpc.core.object.address import CoreAddress
+from citydpc.core.object.building import Building
+from citydpc.core.object.buildingPart import BuildingPart
+from citydpc.core.object.surfacegml import SurfaceGML
+from citydpc.core.object.fileUtil import CityFile
+from citydpc.core.object.geometry import GeometryGML
 from citydpc.tools.partywall import get_party_walls
 from . import CALC_ROOF_VOLUME_ON_IMPORT
 

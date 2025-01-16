@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from citydpc.dataset import Dataset
-    from citydpc.core.obejct.surfacegml import SurfaceGML
+    from citydpc.core.object.surfacegml import SurfaceGML
 
 
 def update_min_max_from_surface(

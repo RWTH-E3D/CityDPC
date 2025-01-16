@@ -5,8 +5,8 @@ if TYPE_CHECKING:
     pass
 
 from citydpc.logger import logger
-from citydpc.core.obejct.geometry import GeometryGML
-from citydpc.core.obejct.building import Building
+from citydpc.core.object.geometry import GeometryGML
+from citydpc.core.object.building import Building
 from citydpc.util import cityBITutil as cBU
 
 

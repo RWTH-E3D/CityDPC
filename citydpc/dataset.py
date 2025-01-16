@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from citydpc.core.obejct.building import Building
+    from citydpc.core.object.building import Building
 
 from citydpc.logger import logger
 

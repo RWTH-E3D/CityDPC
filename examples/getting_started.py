@@ -100,6 +100,5 @@ dataCombine = cityATB.search_dataset(
 print(len(dataCombine))
 from citydpc.core.output.citygmlOutput import write_citygml_file
 
-print(dataCombine)
 write_citygml_file(dataCombine, "newFilename.gml")
 # you can choose between CityGML 1.0 and 2.0

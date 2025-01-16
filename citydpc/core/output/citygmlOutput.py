@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from citydpc.dataset import Dataset
-    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
-    from citydpc.core.obejct.surfacegml import SurfaceGML
-    from citydpc.core.obejct.geometry import GeometryGML
-    from citydpc.core.obejct.address import CoreAddress
+    from citydpc.core.object.abstractBuilding import AbstractBuilding
+    from citydpc.core.object.surfacegml import SurfaceGML
+    from citydpc.core.object.geometry import GeometryGML
+    from citydpc.core.object.address import CoreAddress
 
 
 import lxml.etree as ET

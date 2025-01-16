@@ -1,5 +1,5 @@
-from citydpc.core.obejct.abstractBuilding import AbstractBuilding
-from citydpc.core.obejct.buildingPart import BuildingPart
+from citydpc.core.object.abstractBuilding import AbstractBuilding
+from citydpc.core.object.buildingPart import BuildingPart
 
 
 class Building(AbstractBuilding):

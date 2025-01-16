@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from citydpc.dataset import Dataset
-    from citydpc.core.obejct.abstractBuilding import AbstractBuilding
-    from citydpc.core.obejct.building import Building
+    from citydpc.core.object.abstractBuilding import AbstractBuilding
+    from citydpc.core.object.building import Building
 
 import numpy as np
 import matplotlib.path as mplP
