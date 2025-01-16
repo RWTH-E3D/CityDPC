@@ -340,20 +340,21 @@ def __create_cityobject_dict(
             cityobject["geometry"].append(geometry)
             bMin, bMax = update_min_max_from_min_max(bMin, bMax, gMin, gMax)
 
-    if not building.address.address_is_empty():
+    if building.addressCollection.addressCollection_is_empty():
         cityobject["address"] = [{}]
-        for i in [
-            "countryName",
-            "locality_type",
-            "localityName",
-            "thoroughfare_type",
-            "thoroughfareNumber",
-            "thoroughfareName",
-            "postalCodeNumber",
-        ]:
-            value = getattr(building.address, i)
-            if value is not None:
-                cityobject["address"][0][i] = value
+        for address in building.addressCollection.get_adresses():
+            for i in [
+                "countryName",
+                "locality_type",
+                "localityName",
+                "thoroughfare_type",
+                "thoroughfareNumber",
+                "thoroughfareName",
+                "postalCodeNumber",
+            ]:
+                value = getattr(address, i)
+                if value is not None:
+                    cityobject["address"][0][i] = value
 
     return cityobject, vertices, bMin, bMax
 

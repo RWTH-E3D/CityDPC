@@ -9,6 +9,7 @@ import json
 import numpy as np
 import matplotlib.path as mplP
 
+from citydpc.core.obejct.address import CoreAddress
 from citydpc.core.obejct.building import Building
 from citydpc.core.obejct.buildingPart import BuildingPart
 from citydpc.core.obejct.surfacegml import SurfaceGML
@@ -467,19 +468,19 @@ def _load_building_information_from_json(
                 building.genericStrings[key] = value
 
     if "address" in jsonDict.keys():
-        # buildings can have multiple addresses, we are only considering the
-        # first
-        address = jsonDict["address"][0]
-        objAttributes = {
-            "country": "countryName",
-            "locality": "localityName",
-            "thoroughfareNumber": "thoroughfareNumber",
-            "thoroughfareName": "thoroughfareName",
-            "postcode": "postalCodeNumber",
-        }
-        for key, value in address.items():
-            if key in objAttributes:
-                setattr(building.address, objAttributes[key], value)
+        for addressDict in jsonDict["address"]:
+            address = CoreAddress()
+            objAttributes = {
+                "country": "countryName",
+                "locality": "localityName",
+                "thoroughfareNumber": "thoroughfareNumber",
+                "thoroughfareName": "thoroughfareName",
+                "postcode": "postalCodeNumber",
+            }
+            for key, value in addressDict.items():
+                if key in objAttributes:
+                    setattr(address, objAttributes[key], value)
+            building.addressCollection.add_address(address)
 
     if "geometry" in jsonDict.keys() and jsonDict["geometry"] != []:
         for geometry in jsonDict["geometry"]:

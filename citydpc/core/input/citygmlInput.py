@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from citydpc.dataset import Dataset
-    from citydpc.core.obejct.address import CoreAddress
     from citydpc.core.obejct.abstractBuilding import AbstractBuilding
 
 
@@ -13,6 +12,7 @@ import matplotlib.path as mplP
 
 from citydpc.logger import logger
 from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
+from citydpc.core.obejct.address import CoreAddress
 from citydpc.core.obejct.building import Building
 from citydpc.core.obejct.buildingPart import BuildingPart
 from citydpc.core.obejct.surfacegml import SurfaceGML
@@ -205,20 +205,21 @@ def load_buildings_from_xml_file(
 
 
 def _load_address_info_from_xml(
-    address: CoreAddress, addressElement: ET.Element, nsmap: dict
+    building: AbstractBuilding, addressElement: ET.Element, nsmap: dict
 ) -> None:
     """loads address info from an <core:Address> element and adds it to the
     address object
 
     Parameters
     ----------
-    address : CoreAddress
-        CoreAddress object to add data to
+    building : AbstractBuilding
+        building object to add address to
     addressElement : ET.Element
         <core:Address> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary
     """
+    address = CoreAddress()
     if "xal" in nsmap.keys():
         xal = "xal"
     elif "xAL" in nsmap.keys():
@@ -250,23 +251,26 @@ def _load_address_info_from_xml(
     address.postalCodeNumber = _get_text_of_xml_element(
         addressElement, nsmap, f".//{xal}:PostalCodeNumber"
     )
+    building.addressCollection.add_address(address)
 
 
 def _load_address_info_From_xml_3_0(
-    address: CoreAddress, addressElement: ET.Element, nsmap: dict
+    building, addressElement: ET.Element, nsmap: dict
 ) -> None:
     """loads address info from an <core:Address> element and adds it to the
     address object for CityGML version 3.0
 
     Parameters
     ----------
-    address : CoreAddress
-        address object to add data to
+    building : AbstractBuilding
+        AbstractBuilding object to add address to
     addressElement : ET.Element
         <core:Address> lxml.etree element
     nsmap : dict
         namespace map of the root xml/gml file in form of a dicitionary
     """
+
+    address = CoreAddress()
 
     address.localityName = _get_text_of_xml_element(
         addressElement, nsmap, ".//xAL:Locality/xAL:NameElement"
@@ -283,6 +287,7 @@ def _load_address_info_From_xml_3_0(
     address.postalCodeNumber = _get_text_of_xml_element(
         addressElement, nsmap, ".//xAL:PostCode/xAL:Identifier"
     )
+    building.addressCollection.add_address(address)
 
 
 def _load_building_information_from_xml(
@@ -339,13 +344,12 @@ def _load_building_information_from_xml(
         building._calc_roof_volume()
     building.create_legacy_surface_dicts()
 
-    address_E = buildingElement.find("bldg:address/core:Address", nsmap)
-    if cityGMLversion in ["1.0", "2.0"]:
-        if address_E is not None:
-            _load_address_info_from_xml(building.address, address_E, nsmap)
-    elif cityGMLversion in ["3.0"]:
-        if address_E is not None:
-            _load_address_info_From_xml_3_0(building.address, address_E, nsmap)
+    address_Es = buildingElement.findall("bldg:address/core:Address", nsmap)
+    for address_E in address_Es:
+        if cityGMLversion in ["1.0", "2.0"]:
+            _load_address_info_from_xml(building, address_E, nsmap)
+        elif cityGMLversion in ["3.0"]:
+            _load_address_info_From_xml_3_0(building, address_E, nsmap)
 
 
 def _get_building_attributes_from_xml_element(

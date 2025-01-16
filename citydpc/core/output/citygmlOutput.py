@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from citydpc.core.obejct.abstractBuilding import AbstractBuilding
     from citydpc.core.obejct.surfacegml import SurfaceGML
     from citydpc.core.obejct.geometry import GeometryGML
+    from citydpc.core.obejct.address import CoreAddress
 
 
 import lxml.etree as ET
@@ -84,12 +85,11 @@ def write_citygml_file(dataset: Dataset, filename: str, version: str = "2.0") ->
             )
 
             bp_E = _add_building_to_cityModel_xml(dataset, buildingPart, cOBP_E, nClass)
+            for address in buildingPart.addressCollection.get_adresses():
+                _add_address_to_xml_building(address, bp_E, nClass)
 
-            if not buildingPart.address.address_is_empty():
-                _add_address_to_xml_building(buildingPart, bp_E, nClass)
-
-        if not building.address.address_is_empty():
-            _add_address_to_xml_building(building, building_E, nClass)
+        for address in building.addressCollection.get_adresses():
+            _add_address_to_xml_building(address, building_E, nClass)
 
     lcorner.text = " ".join(map(str, dataset._minimum))
     ucorner.text = " ".join(map(str, dataset._maximum))
@@ -172,7 +172,7 @@ def _add_building_to_cityModel_xml(
             newGenStr_E = ET.SubElement(
                 building_E, ET.QName(nClass.gen, "stringAttribute"), name=key
             )
-            ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = value
+            ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = str(value)
 
     elif version == "3.0":
         building_E = _add_building_to_cityModel_xml_3_0(
@@ -685,80 +685,79 @@ def _add_terrainIntersection_to_xml_building(
 
 
 def _add_address_to_xml_building(
-    building: AbstractBuilding, parent_E: ET.Element, nClass: citygmlClasses.CGML0
+    address: CoreAddress, parent_E: ET.Element, nClass: citygmlClasses.CGML0
 ) -> None:
     """add address to an xml element (parent_E)
 
     Parameters
     ----------
-    building : AbstractBuilding
-        either Building or BuildingPart object
+    address : CoreAddress
+        address object
     parent_E : ET.Element
         direct parent element (either cityObjectMember or consistsOfBuildingPart)
     nClass : xmlClasses.CGML0
         namespace class
     """
 
-    if not building.address.address_is_empty():
-        bldgAddress_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, "address"))
-        address_E = ET.SubElement(bldgAddress_E, "Address")
-        if building.address.gml_id is not None:
-            address_E.attrib["{http://www.opengis.net/gml}id"] = building.address.gml_id
-        xalAddress_E = ET.SubElement(address_E, "xalAddress")
-        addressDetails_E = ET.SubElement(
-            xalAddress_E, ET.QName(nClass.xal, "AddressDetails")
+    bldgAddress_E = ET.SubElement(parent_E, ET.QName(nClass.bldg, "address"))
+    address_E = ET.SubElement(bldgAddress_E, "Address")
+    if address.gml_id is not None:
+        address_E.attrib["{http://www.opengis.net/gml}id"] = address.gml_id
+    xalAddress_E = ET.SubElement(address_E, "xalAddress")
+    addressDetails_E = ET.SubElement(
+        xalAddress_E, ET.QName(nClass.xal, "AddressDetails")
+    )
+    country_E = ET.SubElement(addressDetails_E, ET.QName(nClass.xal, "Country"))
+
+    if address.countryName is not None:
+        ET.SubElement(
+            country_E, ET.QName(nClass.xal, "CountryName")
+        ).text = address.countryName
+
+    if address.locality_type is not None:
+        locality_E = ET.SubElement(
+            country_E,
+            ET.QName(nClass.xal, "Locality"),
+            attrib={"Type": address.locality_type},
         )
-        country_E = ET.SubElement(addressDetails_E, ET.QName(nClass.xal, "Country"))
+    else:
+        locality_E = ET.SubElement(
+            country_E,
+            ET.QName(nClass.xal, "Locality"),
+        )
 
-        if building.address.countryName is not None:
+    if address.localityName is not None:
+        ET.SubElement(
+            locality_E, ET.QName(nClass.xal, "LocalityName")
+        ).text = address.localityName
+
+    if (
+        address.thoroughfare_type is not None
+        or address.thoroughfareName is not None
+        or address.thoroughfareNumber is not None
+    ):
+        thoroughfare_E = ET.SubElement(
+            locality_E, ET.QName(nClass.xal, "Thoroughfare")
+        )
+
+        if address.thoroughfare_type is not None:
+            thoroughfare_E.attrib["Type"] = address.thoroughfare_type
+
+        if address.thoroughfareNumber is not None:
             ET.SubElement(
-                country_E, ET.QName(nClass.xal, "CountryName")
-            ).text = building.address.countryName
+                thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareNumber")
+            ).text = address.thoroughfareNumber
 
-        if building.address.locality_type is not None:
-            locality_E = ET.SubElement(
-                country_E,
-                ET.QName(nClass.xal, "Locality"),
-                attrib={"Type": building.address.locality_type},
-            )
-        else:
-            locality_E = ET.SubElement(
-                country_E,
-                ET.QName(nClass.xal, "Locality"),
-            )
-
-        if building.address.localityName is not None:
+        if address.thoroughfareName is not None:
             ET.SubElement(
-                locality_E, ET.QName(nClass.xal, "LocalityName")
-            ).text = building.address.localityName
+                thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareName")
+            ).text = address.thoroughfareName
 
-        if (
-            building.address.thoroughfare_type is not None
-            or building.address.thoroughfareName is not None
-            or building.address.thoroughfareNumber is not None
-        ):
-            thoroughfare_E = ET.SubElement(
-                locality_E, ET.QName(nClass.xal, "Thoroughfare")
-            )
-
-            if building.address.thoroughfare_type is not None:
-                thoroughfare_E.attrib["Type"] = building.address.thoroughfare_type
-
-            if building.address.thoroughfareNumber is not None:
-                ET.SubElement(
-                    thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareNumber")
-                ).text = building.address.thoroughfareNumber
-
-            if building.address.thoroughfareName is not None:
-                ET.SubElement(
-                    thoroughfare_E, ET.QName(nClass.xal, "ThoroughfareName")
-                ).text = building.address.thoroughfareName
-
-        if building.address.postalCodeNumber is not None:
-            postalCode_E = ET.SubElement(locality_E, ET.QName(nClass.xal, "PostalCode"))
-            ET.SubElement(
-                postalCode_E, ET.QName(nClass.xal, "PostalCodeNumber")
-            ).text = building.address.postalCodeNumber
+    if address.postalCodeNumber is not None:
+        postalCode_E = ET.SubElement(locality_E, ET.QName(nClass.xal, "PostalCode"))
+        ET.SubElement(
+            postalCode_E, ET.QName(nClass.xal, "PostalCodeNumber")
+        ).text = address.postalCodeNumber
 
 
 def __untransform_surface_to_str(surface: SurfaceGML, transform: dict) -> str:

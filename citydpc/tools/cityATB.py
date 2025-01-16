@@ -188,15 +188,13 @@ def check_building_for_address(
         returns True if all conditions are met for the building or
         at least one buildingPart
     """
-    if not building.address.address_is_empty():
-        res = building.address.check_address(addressRestriciton)
-        if res:
+    if not building.addressCollection.addressCollection_is_empty():
+        if building.addressCollection.check_address(addressRestriciton):
             return True
 
     for buildingPart in building.get_building_parts():
-        if not buildingPart.address.address_is_empty():
-            res = buildingPart.address.check_address(addressRestriciton)
-            if res:
+        if not buildingPart.addressCollection.addressCollection_is_empty():
+            if buildingPart.addressColleciion.check_address(addressRestriciton):
                 return True
 
     return False
@@ -301,8 +299,10 @@ def check_building_for_border_and_address(
     if border is not None:
         res_coor = check_if_building_in_coordinates(building, borderCoordinates, border)
 
-    if not building.address.address_is_empty():
-        res_addr = building.address.check_address(addressRestriciton)
+    if addressRestriciton is not None:
+        res_addr = check_building_for_address(building, addressRestriciton)
+    else:
+        res_addr = False
 
     if border is not None and addressRestriciton is None:
         return res_coor

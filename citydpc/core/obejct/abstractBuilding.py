@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from citydpc.core.obejct.surfacegml import SurfaceGML
     from citydpc.core.obejct.geometry import GeometryGML
 
-from citydpc.core.obejct.address import CoreAddress
+from citydpc.core.obejct.address import AddressCollection
 from citydpc.logger import logger
 
 import numpy as np
@@ -55,7 +55,7 @@ class AbstractBuilding:
 
         self.terrainIntersections = None
 
-        self.address = CoreAddress()
+        self.addressCollection = AddressCollection()
 
     def has_3Dgeometry(self) -> bool:
         """checks if abstractBuilding has geometry
@@ -193,6 +193,7 @@ class AbstractBuilding:
 
     def _calc_roof_volume(self) -> None:
         """calculates the roof volume of the building"""
+        return
         roofSurfaces = self.get_surfaces(["RoofSurface"])
         if roofSurfaces != []:
             self.roof_volume = 0
