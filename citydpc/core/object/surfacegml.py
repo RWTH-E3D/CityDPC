@@ -5,6 +5,7 @@ from numpy import linalg as LA
 from itertools import tee, chain
 
 from citydpc.logger import logger
+from . import SurfaceConfig
 
 
 class SurfaceGML(object):
@@ -270,7 +271,10 @@ class SurfaceGML(object):
 
         # perpendicular distance component
         c = np.cross(p - a, d)
-        if np.hypot(h, np.linalg.norm(c)) <= 0.01:
+        if (
+            np.hypot(h, np.linalg.norm(c))
+            <= SurfaceConfig.DISTANCE_BETWEEN_LINE_AND_POINT
+        ):
             return tuple(p)
         else:
             return None
