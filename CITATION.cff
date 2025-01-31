@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: conference-paper
+title: "CityDPC: A Python Library for handling 3D City Model Datasets"
+authors:
+  - family-names: Shamovich
+    given-names: Maxim
+  - family-names: Raming
+    given-names: Simon
+  - family-names: Malhotra
+    given-names: Avichal
+  - family-names: Frisch
+    given-names: Jérôme
+  - family-names: Van Treeck
+    given-names: Christoph
+year: 2024
+doi: 10.1002/bapi.202400038
+conference:
+  name: "BauSim Conference 2024"
+languages:
+  - en
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Shamovich
+      given-names: Maxim
+    - family-names: Raming
+      given-names: Simon
+    - family-names: Malhotra
+      given-names: Avichal
+    - family-names: Frisch
+      given-names: Jérôme
+    - family-names: Van Treeck
+      given-names: Christoph
+  title: "CityDPC: A Python Library for handling 3D City Model Datasets"
+  year: 2024
+  conference:
+    name: "BauSim Conference 2024"
+  doi: 10.1002/bapi.202400038
+  languages:
+    - en

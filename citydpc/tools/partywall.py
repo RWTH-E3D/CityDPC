@@ -11,6 +11,8 @@ import math
 from shapely import geometry as slyGeom
 import shapely
 
+from . import PartyWallConfig
+
 
 def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
     """checks for adjacent walls in dataset
@@ -79,7 +81,9 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
         # self collision check
         # this includes all walls of the building (and building parts) geometry
         for j, poly_0 in enumerate(polys_in_building_0):
-            p_0 = _create_buffered_polygon(poly_0["coor"])
+            p_0 = _create_buffered_polygon(
+                poly_0["coor"], PartyWallConfig.GROUNDSURFACE_BUFFER
+            )
             for poly_1 in polys_in_building_0[j + 1 :]:
                 p_1 = slyGeom.Polygon(poly_1["coor"])
                 if not p_0.intersection(p_1).is_empty:
@@ -98,7 +102,9 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
             # collision with the building itself
             if building_1.has_3Dgeometry():
                 for poly_0 in polys_in_building_0:
-                    p_0 = _create_buffered_polygon(poly_0["coor"])
+                    p_0 = _create_buffered_polygon(
+                        poly_0["coor"], PartyWallConfig.GROUNDSURFACE_BUFFER
+                    )
                     for poly_1 in building_1.get_surfaces(["GroundSurface"]):
                         p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                         if not p_0.intersection(p_1).is_empty:
@@ -120,7 +126,9 @@ def get_party_walls(dataset: Dataset) -> list[str, str, str, str, float, list]:
                         updNumOfWalls.append(f"{building_1.gml_id}/{b_part.gml_id}")
                     if b_part.has_3Dgeometry():
                         for poly_0 in polys_in_building_0:
-                            p_0 = _create_buffered_polygon(poly_0["coor"])
+                            p_0 = _create_buffered_polygon(
+                                poly_0["coor"], PartyWallConfig.GROUNDSURFACE_BUFFER
+                            )
                             for poly_1 in b_part.get_surfaces(["GroundSurface"]):
                                 p_1 = slyGeom.Polygon(poly_1.gml_surface_2array)
                                 if not p_0.intersection(p_1).is_empty:
@@ -162,12 +170,13 @@ def _find_party_walls(
         hitS0 = False
         for surface_1 in b_1_surfaces:
             hitS1 = False
-            # consider walls if there norm vectors equal or inverse or don't differ
-            # more than 15 degrees (= 0.9659 cos(rad))
+            # consider walls if there norm vectors equal or inverse or don't
+            # difffer more than PartyWallConfig.MAX_NORM_VECTOR_ANGLE_DIFF
             if (
                 np.array_equal(surface_0.normal_uni, surface_1.normal_uni)
                 or np.array_equal(surface_0.normal_uni, -surface_1.normal_uni)
-                or np.abs(np.dot(surface_0.normal_uni, surface_1.normal_uni)) > 0.9659
+                or np.abs(np.dot(surface_0.normal_uni, surface_1.normal_uni))
+                > PartyWallConfig.MAX_NORM_VECTOR_ANGLE_DIFF
             ):
                 # check if rotation is needed
                 if np.array_equal(
@@ -210,14 +219,15 @@ def _find_party_walls(
                         t_surf_1, rot_point, rad_angle
                     )
 
-                # check distance in rotated y direction (if distance is larger than
-                # 0.15 [uom] walls shouldn't be considered as party walls)
+                # check distance in rotated y direction (if distance is larger
+                # than GROUNDSURFACE_BUFFER walls shouldn't be considered as
+                # party walls)
                 if (
                     abs(
                         np.mean(poly_0_rotated, axis=0)[1]
                         - np.mean(poly_1_rotated, axis=0)[1]
                     )
-                    > 0.15
+                    > PartyWallConfig.GROUNDSURFACE_BUFFER
                 ):
                     continue
 

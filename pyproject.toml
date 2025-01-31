@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "citydpc"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="Maxim Shamovich", email="shamovich@e3d.rwth-aachen.de" },
   { name="Simon Raming", email="simon.raming@rwth-aachen.de" },
@@ -29,5 +29,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.e3d.rwth-aachen.de/e3d-software-tools/citypythonclass"
-"Bug Tracker" = "https://gitlab.e3d.rwth-aachen.de/e3d-software-tools/citypythonclass/issues"
+"Homepage" = "https://github.com/RWTH-E3D/CityDPC"
+"Bug Tracker" = "https://github.com/RWTH-E3D/CityDPC/issues"
