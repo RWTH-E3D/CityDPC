@@ -42,6 +42,7 @@ We gratefully acknowledge the financial support by BMWK, promotional reference 0
 
 ## License
 Available under the MIT [License](License.md).
+See the _Cite this repository_ function or the [CITATION.cff](CITATION.cff) for citation of this repository.
 
 ## Project status
 Currently under active development.
