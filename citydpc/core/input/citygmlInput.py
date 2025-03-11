@@ -80,9 +80,22 @@ def load_buildings_from_xml_file(
     upperCorner = None
     envelope_E = root.find("gml:boundedBy/gml:Envelope", nsmap)
     if envelope_E is not None:
-        fileSRSName = envelope_E.attrib["srsName"]
-        lowerCorner = envelope_E.find("gml:lowerCorner", nsmap).text.split(" ")
-        upperCorner = envelope_E.find("gml:upperCorner", nsmap).text.split(" ")
+        try:
+            fileSRSName = envelope_E.attrib["srsName"] 
+            lowerCorner = envelope_E.find("gml:lowerCorner", nsmap).text.split()
+            upperCorner = envelope_E.find("gml:upperCorner", nsmap).text.split()
+        except KeyError:
+            if not ignoreRefSystem:
+                logger.error(
+                    "Unable to load file! Can't find gml:Envelope for srsName "
+                    + "defenition. Ignoring file. If you want to ignore this "
+                    + "error set ignoreRefSystem of the "
+                    + "load_buildings_from_xml_file function to True"
+
+                )
+                return
+            else:
+                logger.info("No gml:Envelope found, but ignoring.")
         if dataset.srsName is None:
             dataset.srsName = fileSRSName
         elif dataset.srsName == fileSRSName:
@@ -150,7 +163,19 @@ def load_buildings_from_xml_file(
                 "bldg:consistsOfBuildingPart/bldg:BuildingPart", nsmap
             )
             for bp_E in bps_in_bldg:
-                bp_id = bp_E.attrib["{http://www.opengis.net/gml}id"]
+                if "{http://www.opengis.net/gml}id" in bp_E.attrib.keys():
+                    bp_id = bp_E.attrib["{http://www.opengis.net/gml}id"]
+                elif (
+                    f"{building_id}_part_{len(new_building.building_parts)}"
+                    not in [x.gml_id for x in new_building.building_parts]
+                ):
+                    bp_id = f"{building_id}_part_{len(new_building.building_parts)}"
+                else:
+                    logger.error(
+                        f"buildingPart of {building_id} has no id "
+                        + "and automatic id is already in use"
+                    )
+                    continue
                 new_building_part = BuildingPart(bp_id, building_id)
                 _load_building_information_from_xml(
                     bp_E, nsmap, new_building_part, cityGMLversion
@@ -459,7 +484,7 @@ def _get_building_surfaces_from_xml_element(
             if lod0FootPrint_E is not None:
                 geometry = GeometryGML("MultiSurface", building.gml_id, 0)
                 geomKey = building.add_geometry(geometry)
-                poly_E = lod0FootPrint_E.findall(".//gml:Polygon", nsmap)
+                poly_E = lod0FootPrint_E.find(".//gml:Polygon", nsmap)
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
@@ -475,7 +500,7 @@ def _get_building_surfaces_from_xml_element(
             if lod0RoofEdge_E is not None:
                 geometry = GeometryGML("MultiSurface", building.gml_id, 0)
                 geomKey = building.add_geometry(geometry)
-                poly_E = lod0RoofEdge_E.findall(".//gml:Polygon", nsmap)
+                poly_E = lod0RoofEdge_E.find(".//gml:Polygon", nsmap)
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
@@ -673,12 +698,12 @@ def _get_polygon_coordinates_from_element(
     # searching for list of coordinates
     posList_E = polygon_element.find(".//gml:posList", nsmap)
     if posList_E is not None:
-        polyStr = posList_E.text.strip().split(" ")
+        polyStr = posList_E.text.strip().split()
     else:
         # searching for individual coordinates in polygon
         pos_Es = polygon_element.findall(".//gml:pos", nsmap)
         for pos_E in pos_Es:
-            polyStr.extend(pos_E.text.strip().split(" "))
+            polyStr.extend(pos_E.text.strip().split())
     return np.array([round(float(x), 3) for x in polyStr])
 
 

@@ -48,7 +48,7 @@ for building in newDataset.get_building_list():
         walls = building.get_surfaces(surfaceTypes=["WallSurface"])
         grounds = building.get_surfaces(surfaceTypes=["GroundSurface"])
         roofs = building.get_surfaces(surfaceTypes=["RoofSurface"])
-        print(f"buildingVolume: {building.roof_volume}")
+        print(f"roofVolume: {building.roof_volume}")
 
         # e.g. to get the area of all roof surfaces
         # you can use the next two lines

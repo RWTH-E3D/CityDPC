@@ -193,7 +193,6 @@ class AbstractBuilding:
 
     def _calc_roof_volume(self) -> None:
         """calculates the roof volume of the building"""
-        return
         roofSurfaces = self.get_surfaces(["RoofSurface"])
         if roofSurfaces != []:
             self.roof_volume = 0

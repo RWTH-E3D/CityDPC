@@ -50,4 +50,5 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.2 fixes for loading CityGML files
 - 0.1.1 add more user config options
