@@ -6,7 +6,7 @@ from itertools import tee, chain
 
 from citydpc.logger import logger
 from . import SurfaceConfig
-from citydpc.core.input import CHECK_IF_SURFACES_ARE_PLANAR
+from citydpc.core.input import CHECK_IF_SURFACES_ARE_PLANAR, FIX_GROUNDSURFACE_OUTLIERS
 
 
 class SurfaceGML(object):
@@ -69,17 +69,17 @@ class SurfaceGML(object):
         self.isSurface = True
 
         self.gml_surface_2array = np.reshape(self.gml_surface, (-1, 3))
+        self.normal_uni = self._calculate_unit_normal(
+            self.gml_surface_2array[0],
+            self.gml_surface_2array[1],
+            self.gml_surface_2array[2],
+        )
         if CHECK_IF_SURFACES_ARE_PLANAR:
             if not self.is_planar():
                 logger.warning(
                     f"Surface {self.surface_id} is not planar, "
                     + "the area and orientation might be incorrect."
                 )
-        self.normal_uni = self._calculate_unit_normal(
-            self.gml_surface_2array[0],
-            self.gml_surface_2array[1],
-            self.gml_surface_2array[2],
-        )
 
         self.creationDate = None
 
@@ -274,6 +274,45 @@ class SurfaceGML(object):
             return True
         else:
             # we want to calculate the normal vector for every combination of 3
+            if FIX_GROUNDSURFACE_OUTLIERS and self.surface_type == "GroundSurface":
+                # Get the Z-coordinates of all unique vertices.
+                heights = self.gml_surface_2array[:-1, 2]
+                unique_heights, counts = np.unique(heights, return_counts=True)
+
+                if len(unique_heights) == 1:
+                    logger.debug(
+                        f"GroundSurface {self.surface_id} is planar "
+                        + "because all points have the same height."
+                    )
+                    return True
+
+                elif len(unique_heights) == 2 and 1 in counts:
+                    logger.debug(
+                        f"GroundSurface {self.surface_id} has a single outlier and will be fixed."
+                    )
+                    # Find the height that is NOT the outlier (the one with the highest count).
+                    majority_height_index = np.argmax(counts)
+                    majority_height = unique_heights[majority_height_index]
+
+                    # Apply the fix: set the Z-coordinate of ALL points to the majority height.
+                    self.gml_surface_2array[:, 2] = majority_height
+
+                    # Recalculate the normal vector (as you correctly did).
+                    self.normal_uni = self._calculate_unit_normal(
+                        self.gml_surface_2array[0],
+                        self.gml_surface_2array[1],
+                        self.gml_surface_2array[2],
+                    )
+
+                    # After fixing it, the surface is now planar by definition.
+                    input("have fixed ground surface outlier")
+                    return True
+
+                else:
+                    logger.debug(
+                        f"GroundSurface {self.surface_id} has multiple heights and will be checked for planarity."
+                    )
+
             # points in order to check if they are all the same
             for i in range(len(self.gml_surface_2array) - 2):
                 normal = self._calculate_unit_normal(
