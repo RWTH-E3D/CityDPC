@@ -6,6 +6,7 @@ from itertools import tee, chain
 
 from citydpc.logger import logger
 from . import SurfaceConfig
+from citydpc.core.input import CHECK_IF_SURFACES_ARE_PLANAR
 
 
 class SurfaceGML(object):
@@ -68,6 +69,18 @@ class SurfaceGML(object):
         self.isSurface = True
 
         self.gml_surface_2array = np.reshape(self.gml_surface, (-1, 3))
+        if CHECK_IF_SURFACES_ARE_PLANAR:
+            if not self.is_planar():
+                logger.warning(
+                    f"Surface {self.surface_id} is not planar, "
+                    + "the area and orientation might be incorrect."
+                )
+        self.normal_uni = self._calculate_unit_normal(
+            self.gml_surface_2array[0],
+            self.gml_surface_2array[1],
+            self.gml_surface_2array[2],
+        )
+
         self.creationDate = None
 
         self.surface_area = self.get_gml_area()
@@ -108,22 +121,10 @@ class SurfaceGML(object):
             returns the orientation of the surface
         """
 
-        gml_surface = np.array(self.gml_surface)
-        gml1 = gml_surface[0:3]
-        gml2 = gml_surface[3:6]
-        gml3 = gml_surface[6:9]
+        cos_angle = abs(self.normal_uni[2])
+        angle_rad = np.arccos(np.clip(cos_angle, -1.0, 1.0))
 
-        vektor_1 = gml2 - gml1
-        vektor_2 = gml3 - gml1
-
-        normal_1 = np.cross(vektor_1, vektor_2)
-        z_axis = np.array([0, 0, 1])
-
-        self.surface_tilt = (
-            np.arccos(np.dot(normal_1, z_axis) / (LA.norm(z_axis) * LA.norm(normal_1)))
-            * 360
-            / (2 * np.pi)
-        )
+        self.surface_tilt = np.rad2deg(angle_rad)
 
         if self.surface_tilt == 180:
             self.surface_tilt = 0.0
@@ -144,80 +145,22 @@ class SurfaceGML(object):
             returns the orientation of the surface
         """
 
-        gml_surface = np.array(self.gml_surface)
-        gml1 = gml_surface[0:3]
-        gml2 = gml_surface[3:6]
-        gml3 = gml_surface[6:9]
-        gml4 = gml_surface[9:12]
-        if len(gml_surface) > 12:
-            vektor_1 = gml2 - gml1
-            vektor_2 = gml4 - gml1
-        else:
-            vektor_1 = gml2 - gml1
-            vektor_2 = gml3 - gml1
-
-        normal_1 = np.cross(vektor_1, vektor_2)
-        normal_uni = normal_1 / LA.norm(normal_1)
-
-        self.normal_uni = normal_uni
-
-        phi = None
-        if normal_uni[0] > 0:
-            phi = np.arctan(normal_uni[1] / normal_uni[0])
-        elif normal_uni[0] < 0 <= normal_uni[1]:
-            phi = np.arctan(normal_uni[1] / normal_uni[0]) + np.pi
-        elif normal_uni[0] < 0 > normal_uni[1]:
-            phi = np.arctan(normal_uni[1] / normal_uni[0]) - np.pi
-        elif normal_uni[0] == 0 < normal_uni[1]:
-            phi = np.pi / 2
-        elif normal_uni[0] == 0 > normal_uni[1]:
-            phi = -np.pi / 2
-
-        if phi is None:
-            pass
-        elif phi < 0:
-            self.surface_orientation = (phi + 2 * np.pi) * 360 / (2 * np.pi)
-        else:
-            self.surface_orientation = phi * 360 / (2 * np.pi)
-
-        if self.surface_orientation is None:
-            pass
-        elif 0 <= self.surface_orientation <= 90:
-            self.surface_orientation = 90 - self.surface_orientation
-        else:
-            self.surface_orientation = 450 - self.surface_orientation
-
-        if normal_uni[2] == -1:
-            self.surface_orientation = -2
-        elif normal_uni[2] == 1:
+        if np.isclose(self.normal_uni[2], 1.0):
+            # surface is horizontal
             self.surface_orientation = -1
+            return self.surface_orientation
+        elif np.isclose(self.normal_uni[2], -1.0):
+            # surface is horizontal but upside down
+            self.surface_orientation = -2
+            return self.surface_orientation
+
+        azimuth_rad = np.arctan2(
+            self.normal_uni[1], self.normal_uni[0]
+        )
+        azimuth_deg = np.rad2deg(azimuth_rad)
+
+        self.surface_orientation = (450 - azimuth_deg) % 360
         return self.surface_orientation
-
-    def unit_normal(self, a, b, c):
-        """calculates the unit normal vector of a surface described by 3 points
-
-        Parameters
-        ----------
-
-        a : float
-            point 1
-        b : float
-            point 2
-        c : float
-            point 3
-
-        Returns
-        ----------
-
-        unit_normal : list
-            unit normal vector as a list
-
-        """
-        x = np.linalg.det([[1, a[1], a[2]], [1, b[1], b[2]], [1, c[1], c[2]]])
-        y = np.linalg.det([[a[0], 1, a[2]], [b[0], 1, b[2]], [c[0], 1, c[2]]])
-        z = np.linalg.det([[a[0], a[1], 1], [b[0], b[1], 1], [c[0], c[1], 1]])
-        magnitude = (x**2 + y**2 + z**2) ** 0.5
-        return x / magnitude, y / magnitude, z / magnitude
 
     def poly_area(self, poly):
         """calculates the area of a polygon with arbitrary points
@@ -246,7 +189,7 @@ class SurfaceGML(object):
             total[0] += prod[0]
             total[1] += prod[1]
             total[2] += prod[2]
-        result = np.dot(total, self.unit_normal(poly[0], poly[1], poly[2]))
+        result = np.dot(total, self.normal_uni)
         return abs(result / 2)
 
     @staticmethod
@@ -278,3 +221,72 @@ class SurfaceGML(object):
             return tuple(p)
         else:
             return None
+
+    @staticmethod
+    def _calculate_unit_normal(p1, p2, p3):
+        """
+        Calculates the unit normal vector for a plane defined by three points
+        using the cross product
+
+        Parameters
+        ----------
+        p1, p2, p3 : array-like
+            Points defining the plane, each should be a 3-element array-like
+
+        Returns
+        -------
+        np.ndarray
+            The unit normal vector as a 3-element NumPy array. Returns a
+            zero vector if the points are co-linear.
+        """
+        v1 = np.asarray(p2) - np.asarray(p1)
+        v2 = np.asarray(p3) - np.asarray(p1)
+
+        cross_product = np.cross(v1, v2)
+
+        norm = LA.norm(cross_product)
+
+        # return zero vector if the points are co-linear
+        if np.isclose(norm, 0):
+            return np.array([0.0, 0.0, 0.0])
+
+        return cross_product / norm
+
+    def is_planar(self) -> bool:
+        """Check if the surface is planar by checking if all points are on the
+        same plane.
+
+        Returns
+        -------
+        bool
+            True if the surface is planar, False otherwise.
+        """
+        logger.debug(f"Checking if surface {self.surface_id} is planar.")
+        if len(self.gml_surface_2array) <= 3:
+            logger.warning(
+                f"Surface {self.surface_id} has too few points to determine if"
+                + " it is planar."
+            )
+            return False
+        elif len(self.gml_surface_2array) <= 4:
+            # first and last point must be the same
+            # so in this case we have 3 points -> has to be planar
+            return True
+        else:
+            # we want to calculate the normal vector for every combination of 3
+            # points in order to check if they are all the same
+            for i in range(len(self.gml_surface_2array) - 2):
+                normal = self._calculate_unit_normal(
+                    self.gml_surface_2array[i],
+                    self.gml_surface_2array[i + 1],
+                    self.gml_surface_2array[i + 2],
+                )
+                if np.all(normal != self.normal_uni, axis=0):
+                    logger.debug(
+                        f"Surface {self.surface_id} is not planar"
+                    )
+                    return False
+        logger.debug(
+            f"Surface {self.surface_id} is planar"
+        )
+        return True
