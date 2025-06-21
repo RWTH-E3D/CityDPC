@@ -303,9 +303,6 @@ class SurfaceGML(object):
                         self.gml_surface_2array[1],
                         self.gml_surface_2array[2],
                     )
-
-                    # After fixing it, the surface is now planar by definition.
-                    input("have fixed ground surface outlier")
                     return True
 
                 else:
