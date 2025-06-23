@@ -55,7 +55,7 @@ class SurfaceGML(object):
                     np.asarray(three_points[2]),
                 )
             )
-        for element in split_surface:
+        for element in split_surface[:]:
             if element in useless_points:
                 split_surface.remove(element)
         self.gml_surface = list(chain(*split_surface))

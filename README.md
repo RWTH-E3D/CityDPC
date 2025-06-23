@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.5 fix index issue in collinear point detection
 - 0.1.4 option for fixing single outliers in GroundSurfaces using input flags
 - 0.1.3 warning for non planar surfaces
 - 0.1.2 fixes for loading CityGML files
