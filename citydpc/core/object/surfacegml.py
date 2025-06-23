@@ -76,10 +76,17 @@ class SurfaceGML(object):
         )
         if CHECK_IF_SURFACES_ARE_PLANAR:
             if not self.is_planar():
-                logger.warning(
-                    f"Surface {self.surface_id} is not planar, "
-                    + "the area and orientation might be incorrect."
-                )
+                if self.surface_type is None:
+                    logger.warning(
+                        f"Surface {self.surface_id} is not planar, "
+                        + "the area and orientation might be incorrect."
+                    )
+                else:
+                    logger.warning(
+                        f"Surface {self.surface_id} of type "
+                        + f"{self.surface_type} is not planar, the area and "
+                        + "orientation might be incorrect."
+                    )
 
         self.creationDate = None
 
@@ -130,7 +137,7 @@ class SurfaceGML(object):
             self.surface_tilt = 0.0
         elif str(self.surface_tilt) == "nan":
             self.surface_tilt = None
-        return self.surface_tilt
+        return float(self.surface_tilt)
 
     def get_gml_orientation(self):
         """calc the orientation of a gml_surface defined by 4 or 5 gml
@@ -160,7 +167,7 @@ class SurfaceGML(object):
         azimuth_deg = np.rad2deg(azimuth_rad)
 
         self.surface_orientation = (450 - azimuth_deg) % 360
-        return self.surface_orientation
+        return float(self.surface_orientation)
 
     def poly_area(self, poly):
         """calculates the area of a polygon with arbitrary points
@@ -190,7 +197,7 @@ class SurfaceGML(object):
             total[1] += prod[1]
             total[2] += prod[2]
         result = np.dot(total, self.normal_uni)
-        return abs(result / 2)
+        return float(abs(result / 2))
 
     @staticmethod
     def n_wise(iterable, n=2):
