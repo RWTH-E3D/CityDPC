@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.7 fix empty geometrie creation/output
 - 0.1.6 fix type of surface properties
 - 0.1.5 fix index issue in collinear point detection
 - 0.1.4 option for fixing single outliers in GroundSurfaces using input flags
