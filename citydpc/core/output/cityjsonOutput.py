@@ -337,8 +337,12 @@ def __create_cityobject_dict(
             geometry, gMin, gMax = __create_geometry_dict(
                 geometry, transformOld, transformNew, vertices
             )
+            if geometry["boundaries"] == []:
+                continue
             cityobject["geometry"].append(geometry)
             bMin, bMax = update_min_max_from_min_max(bMin, bMax, gMin, gMax)
+        if cityobject["geometry"] == []:
+            cityobject.pop(geometry)
 
     if building.addressCollection.addressCollection_is_empty():
         cityobject["address"] = [{}]
