@@ -67,6 +67,7 @@ def load_buildings_from_xml_file(
     cityGMLversion = nsmap["core"].rsplit("/", 1)[-1]
     if cityGMLversion not in supportedCityGMLversions:
         raise ValueError(f"CityGML version {cityGMLversion} not supported")
+    logger.debug(f"CityGML version: {cityGMLversion}")
 
     # checking for ADEs
     ades = []
@@ -334,6 +335,7 @@ def _load_building_information_from_xml(
     cityGMLversion : str
         version of the CityGML file
     """
+    logger.debug(f"Loading building information from {building.gml_id}")
     _get_building_surfaces_from_xml_element(
         building, buildingElement, nsmap, cityGMLversion
     )
@@ -546,8 +548,13 @@ def _get_building_surfaces_from_xml_element(
                 )
             # do something with this list of solid memebers
         else:
-            geometry = GeometryGML("MultiSurface", building.gml_id, 2)
-            geomKey = building.add_geometry(geometry)
+            bounds = element.findall("bldg:boundedBy", nsmap)
+            if bounds:
+                geometry = GeometryGML("MultiSurface", building.gml_id, 2)
+                geomKey = building.add_geometry(geometry)
+            else:
+                # neither solid or bounds found -> no geometry
+                return
 
         building.lod = "2"
 
