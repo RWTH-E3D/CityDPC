@@ -30,6 +30,7 @@ def write_cityjson_file(
     title: str = None,
     transfromNew: dict = {"scale": [1, 1, 1], "translate": [0, 0, 0]},
     saveGeoExtToBuildings: bool = True,
+    ensure_ascii: bool = False,
 ) -> None:
     """writes a dataset to a cityjson file
 
@@ -57,6 +58,9 @@ def write_cityjson_file(
         by default {"scale": [1, 1, 1], "translate": [0, 0, 0]}
     saveGeoExtToBuildings: bool default True
         save geographical extent of building as attribute
+    ensure_ascii : bool, optional
+        if True, the output will be ASCII only, by default False
+        so we germans can have ß and stuff
     """
 
     supportedVersions = ["1.1", "2.0"]
@@ -123,8 +127,8 @@ def write_cityjson_file(
             return cityjson
 
         # write the file
-        with open(filename, "w") as f:
-            json.dump(cityjson, f, indent=2)
+        with open(filename, "w", encoding="UTF-8") as f:
+            json.dump(cityjson, f, indent=2, ensure_ascii=ensure_ascii)
 
 
 def __create_metadata_dict(
@@ -344,7 +348,7 @@ def __create_cityobject_dict(
         if cityobject["geometry"] == []:
             cityobject.pop(geometry)
 
-    if building.addressCollection.addressCollection_is_empty():
+    if not building.addressCollection.addressCollection_is_empty():
         cityobject["address"] = [{}]
         for address in building.addressCollection.get_adresses():
             for i in [

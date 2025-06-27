@@ -53,7 +53,7 @@ def load_buildings_from_xml_file(
     """
     logger.info(f"loading buildings from CityGML file {filepath}")
     supportedCityGMLversions = ["1.0", "2.0", "3.0"]
-    parser = ET.XMLParser(remove_blank_text=True)
+    parser = ET.XMLParser(remove_blank_text=True, encoding="UTF-8")
     tree = ET.parse(filepath, parser)
     root = tree.getroot()
     nsmap = root.nsmap
@@ -277,6 +277,10 @@ def _load_address_info_from_xml(
     address.postalCodeNumber = _get_text_of_xml_element(
         addressElement, nsmap, f".//{xal}:PostalCodeNumber"
     )
+    if address.check_address_is_empty():
+        logger.debug(f"Address of {building.gml_id} is empty, no mapable "
+                     + "address information found")
+        return
     building.addressCollection.add_address(address)
 
 
@@ -371,7 +375,7 @@ def _load_building_information_from_xml(
         building._calc_roof_volume()
     building.create_legacy_surface_dicts()
 
-    address_Es = buildingElement.findall("bldg:address/core:Address", nsmap)
+    address_Es = buildingElement.findall('bldg:address', nsmap)
     for address_E in address_Es:
         if cityGMLversion in ["1.0", "2.0"]:
             _load_address_info_from_xml(building, address_E, nsmap)
