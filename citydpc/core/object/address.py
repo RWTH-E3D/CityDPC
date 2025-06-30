@@ -53,6 +53,25 @@ class CoreAddress:
 
         return True
 
+    def check_address_is_empty(self) -> bool:
+        """check if address is empty
+
+        Returns
+        -------
+        bool
+            True:  address is empty
+            False: address is not empty
+        """
+        return (
+            self.countryName is None
+            and self.locality_type is None
+            and self.localityName is None
+            and self.thoroughfare_type is None
+            and self.thoroughfareNumber is None
+            and self.thoroughfareName is None
+            and self.postalCodeNumber is None
+        )
+
 
 class AddressCollection:
     """object representing a collection of core:Address elements"""
@@ -69,7 +88,12 @@ class AddressCollection:
             True:  address collection is empty
             False: address collection is not empty
         """
-        return len(self.addresses) == 0
+        if len(self.addresses) == 0:
+            return True
+        for address in self.addresses:
+            if not address.check_address_is_empty():
+                return False
+        return True
 
     def add_address(self, address: CoreAddress) -> None:
         """add address to collection
