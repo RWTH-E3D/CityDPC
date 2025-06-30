@@ -147,7 +147,7 @@ def _handle_reference_system(
     else:
         logger.error(
             f"Unable to load data! Given referenceSystem ({newSrs}) "
-            f"does not match dataset srsName ({dataset.srs_name})"
+            f"does not match dataset srsName ({dataset.srsName})"
         )
         return False
 
