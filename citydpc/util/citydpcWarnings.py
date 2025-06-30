@@ -2,7 +2,7 @@ import warnings
 import inspect
 import os
 
-from ..config import WARN_ONCE_PER_CATEGORY
+from ..config import WARN_ONCE_PER_CATEGORY, SUPPRESSED_WARNING_CATEGORIES
 
 # Get the absolute path of the directory containing this file
 _LIBRARY_ROOT_PATH = os.path.abspath(
@@ -22,6 +22,8 @@ def warn(message: str, category: type[Warning]):
     category : type[Warning]
         the warning category, e.g. UserWarning, DeprecationWarning, etc.
     """
+    if category in SUPPRESSED_WARNING_CATEGORIES:
+        return
     if WARN_ONCE_PER_CATEGORY and category in _WARNED_CATEGORIES:
         return
     _WARNED_CATEGORIES.add(category)

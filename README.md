@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.10 suppress warnings by type
 - 0.1.9 more config options, fixed typo, minor address change
 - 0.1.8 address handling improvements
 - 0.1.7 fix empty geometrie creation/output
