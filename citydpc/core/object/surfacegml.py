@@ -3,10 +3,12 @@
 import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
+from .exceptions import SurfacePlanarityWarning
 
 from citydpc.logger import logger
 from . import SurfaceConfig
 from citydpc.core.input import CHECK_IF_SURFACES_ARE_PLANAR, FIX_GROUNDSURFACE_OUTLIERS
+from citydpc.util.citydpcWarnings import warn
 
 
 class SurfaceGML(object):
@@ -77,16 +79,20 @@ class SurfaceGML(object):
         if CHECK_IF_SURFACES_ARE_PLANAR:
             if not self.is_planar():
                 if self.surface_type is None:
-                    logger.warning(
+                    message = (
                         f"Surface {self.surface_id} is not planar, "
                         + "the area and orientation might be incorrect."
                     )
                 else:
-                    logger.warning(
+                    message = (
                         f"Surface {self.surface_id} of type "
                         + f"{self.surface_type} is not planar, the area and "
                         + "orientation might be incorrect."
                     )
+                warn(
+                    message,
+                    SurfacePlanarityWarning,
+                )
 
         self.creationDate = None
 
