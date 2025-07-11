@@ -74,6 +74,19 @@ class Dataset:
                 return
         self.__setitem__(building.gml_id, building)
 
+    def reduce(self, building_ids: list[str]) -> None:
+        """reduce the dataset to only contain buildings with the given ids
+
+        Parameters
+        ----------
+        building_ids : list[str]
+            list of building ids to keep in the dataset
+        """
+        reduced_buildings = {
+            k: v for k, v in self.buildings.items() if k in building_ids
+        }
+        self.buildings = reduced_buildings
+
     def __getitem__(self, key: str) -> Building:
         return self.buildings[key]
 

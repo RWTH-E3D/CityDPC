@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.12 add reduce function to dataset for bulk deletions
 - 0.1.11 better namespace creation for output
 - 0.1.10 suppress warnings by type
 - 0.1.9 more config options, fixed typo, minor address change
