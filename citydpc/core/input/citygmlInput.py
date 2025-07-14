@@ -436,6 +436,13 @@ def _get_building_attributes_from_xml_element(
                 i, nsmap, "gen:value"
             )
 
+        genDouble = buildingElement.findall("gen:doubleAttribute", nsmap)
+        for i in genDouble:
+            key = i.attrib["name"]
+            building.genericDoubles[key] = _get_float_of_xml_element(
+                i, nsmap, "gen:value"
+            )
+
         building.yearOfConstruction = _get_int_of_xml_element(
             buildingElement, nsmap, "bldg:yearOfConstruction"
         )

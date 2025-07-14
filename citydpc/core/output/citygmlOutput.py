@@ -175,6 +175,12 @@ def _add_building_to_cityModel_xml(
             )
             ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = str(value)
 
+        for key, value in building.genericDoubles.items():
+            newGenDbl_E = ET.SubElement(
+                building_E, ET.QName(nClass.gen, "doubleAttribute"), name=key
+            )
+            ET.SubElement(newGenDbl_E, ET.QName(nClass.gen, "value")).text = str(value)
+
     elif version == "3.0":
         building_E = _add_building_to_cityModel_xml_3_0(
             dataset, building, building_E, nClass

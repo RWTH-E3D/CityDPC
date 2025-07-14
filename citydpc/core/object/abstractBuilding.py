@@ -42,6 +42,7 @@ class AbstractBuilding:
         self.extRef_objName = None
 
         self.genericStrings = {}
+        self.genericDoubles = {}
 
         self.function = None
         self.usage = None
