@@ -325,7 +325,7 @@ def __create_cityobject_dict(
         value = getattr(building, i)
         if value is not None:
             attributes[i] = value
-    cityobject["attributes"] = attributes
+    cityobject["attributes"] = {**building.genericDoubles, **attributes}
 
     if not building.is_building_part and building.has_building_parts():
         cityobject["children"] = []
