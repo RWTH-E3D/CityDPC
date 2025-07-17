@@ -577,7 +577,9 @@ def _add_cityjson_surface_to_building(
     surfaceCoor = []
     for vertex in vertexIndexList[0]:
         surfaceCoor.append(vertices[vertex])
-    surfaceType, surfaceId = _get_semantic_surface_info(semantics, depthInfo)
+    surfaceType, surfaceId, attribs = _get_semantic_surface_info(
+        semantics, depthInfo
+    )
     if surfaceType is None or surfaceType not in [
         "GroundSurface",
         "RoofSurface",
@@ -602,6 +604,8 @@ def _add_cityjson_surface_to_building(
         np.array(surfaceCoor).flatten(), surfaceId, surfaceType
     )
     if newSurface.isSurface:
+        if attribs is not None:
+            newSurface.attributes = attribs
         if len(depthInfo) == 3:
             geometry.add_surface(newSurface, str(depthInfo))
         else:
@@ -613,7 +617,7 @@ def _add_cityjson_surface_to_building(
 
 def _get_semantic_surface_info(
     semantics: dict, depthInfo: list[float]
-) -> list[str | None, str | None]:
+) -> list[str | None, str | None, dict | None]:
     """gets semantic surface information from semantics
 
     Parameters
@@ -625,7 +629,7 @@ def _get_semantic_surface_info(
 
     Returns
     -------
-    [str | None, str | None]
+    [str | None, str | None, dict | None]
         surface type (if available) and (if available) surface id
     """
     value = semantics["values"]
@@ -633,10 +637,16 @@ def _get_semantic_surface_info(
         value = value[index]
 
     if value is None:
-        return None, None
+        return None, None, None
+
+    attribs = {
+        key: value
+        for key, value in semantics["surfaces"][value].items()
+        if key not in ["type", "id", "parent", "children"]
+    }
 
     surfaceType = semantics["surfaces"][value]["type"]
     if "id" in semantics["surfaces"][value].keys():
-        return surfaceType, semantics["surfaces"][value]["id"]
+        return surfaceType, semantics["surfaces"][value]["id"], attribs
     else:
-        return surfaceType, None
+        return surfaceType, None, attribs

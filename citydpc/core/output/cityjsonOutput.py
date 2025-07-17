@@ -517,7 +517,7 @@ def __update_surfaces_dict(surface: SurfaceGML, surfaces: list[dict]) -> int:
     int
         surface index for semantics
     """
-    surface_dict = {}
+    surface_dict = surface.attributes.copy()
 
     surface_dict["type"] = surface.surface_type
     if not surface.surface_id.startswith("citydpc_"):
