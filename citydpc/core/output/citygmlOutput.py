@@ -531,6 +531,28 @@ def _add_lod_2_geometry_to_xml_building(
             boundedBy_E,
             ET.QName(nClass.bldg, surface.surface_type),
         )
+        dbleAttrbs = []
+        for key, value in surface.attributes.items():
+            if type(value) is float:
+                dbleAttrbs.append(ET.QName(nClass.gml, key))
+            newGenStr_E = ET.SubElement(
+                wallRoofGround_E,
+                ET.QName(nClass.gen, "stringAttribute"),
+                name=key,
+            )
+            ET.SubElement(newGenStr_E, ET.QName(nClass.gen, "value")).text = (
+                str(value)
+            )
+        for dbleAttrb in dbleAttrbs:
+            newGenDble_E = ET.SubElement(
+                wallRoofGround_E,
+                ET.QName(nClass.gen, "dbleAttribute"),
+                name=dbleAttrb,
+            )
+            ET.SubElement(newGenDble_E, ET.QName(nClass.gen, "value")).text = (
+                str(surface.attributes[dbleAttrb])
+            )
+
         if surface.surface_id is not None and not surface.surface_id.startswith(
             "citydpc_"
         ):

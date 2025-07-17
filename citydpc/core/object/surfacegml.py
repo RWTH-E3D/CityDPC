@@ -46,6 +46,7 @@ class SurfaceGML(object):
         self.surface_orientation = None
         self.surface_tilt = None
         self.normal_uni = None
+        self.attributes = {}
 
         useless_points = []
         split_surface = list(zip(*[iter(self.gml_surface)] * 3))

@@ -765,6 +765,18 @@ def _add_surface_from_element(
             coordinates, used_id, target_str.rsplit(":")[-1], poly_id
         )
         if newSurface.isSurface:
+            genStrings = surface_E.findall("gen:stringAttribute", nsmap)
+            for i in genStrings:
+                key = i.attrib["name"]
+                newSurface.attributes[key] = _get_text_of_xml_element(
+                    i, nsmap, "gen:value"
+                )
+            genDouble = surface_E.findall("gen:doubleAttribute", nsmap)
+            for i in genDouble:
+                key = i.attrib["name"]
+                newSurface.attributes[key] = _get_float_of_xml_element(
+                    i, nsmap, "gen:value"
+                )
             geometry.add_surface(newSurface)
         else:
             building._warn_invalid_surface(used_id)
