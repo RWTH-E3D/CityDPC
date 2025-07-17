@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.15 (un-)allowedIDs parameter for imports
 - 0.1.14 support for generic attributes on surfaces
 - 0.1.13 support for gen:doubleAttributes on buildings
 - 0.1.12 add reduce function to dataset for bulk deletions

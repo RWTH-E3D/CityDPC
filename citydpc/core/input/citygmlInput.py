@@ -30,6 +30,8 @@ def load_buildings_from_xml_file(
     ignoreRefSystem: bool = False,
     ignoreExistingTransform: bool = False,
     updatePartyWalls: bool = False,
+    allowedIDs: list[str] = None,
+    unallowedIDs: list[str] = None,
 ):
     """adds buildings from filepath to the dataset
 
@@ -50,7 +52,24 @@ def load_buildings_from_xml_file(
         by default False
     updatePartyWalls : bool, optional
         flag to update party walls, by default False
+    allowedIDs : list[str], optional
+        list of building ids to restrict the dataset, by default None
+    unallowedIDs : list[str], optional
+        list of building ids to remove from the dataset, by default None
     """
+    if allowedIDs is not None:
+        if len(allowedIDs) == 0:
+            logger.error("allowedIDs is empty")
+            return
+        if unallowedIDs is not None:
+            if len(unallowedIDs) == 0:
+                logger.error("unallowedIDs is empty")
+                return
+            overlap = set(allowedIDs) & set(unallowedIDs)
+            if overlap:
+                logger.warning(
+                    f"Overlapping IDs found (un-)allowedIDs: {overlap}"
+                )
     logger.info(f"loading buildings from CityGML file {filepath}")
     supportedCityGMLversions = ["1.0", "2.0", "3.0"]
     parser = ET.XMLParser(remove_blank_text=True, encoding="UTF-8")
@@ -92,7 +111,6 @@ def load_buildings_from_xml_file(
                     + "defenition. Ignoring file. If you want to ignore this "
                     + "error set ignoreRefSystem of the "
                     + "load_buildings_from_xml_file function to True"
-
                 )
                 return
             else:
@@ -155,6 +173,12 @@ def load_buildings_from_xml_file(
 
         for building_E in buildings_in_com:
             building_id = building_E.attrib["{http://www.opengis.net/gml}id"]
+            if allowedIDs is not None:
+                if building_id not in allowedIDs:
+                    continue
+            if unallowedIDs is not None:
+                if building_id in unallowedIDs:
+                    continue
             new_building = Building(building_id)
             _load_building_information_from_xml(
                 building_E, nsmap, new_building, cityGMLversion

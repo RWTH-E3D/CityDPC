@@ -203,6 +203,7 @@ def load_buildings_from_dict(
     ignoreExistingTransform: bool = False,
     updatePartyWalls: bool = False,
     allowedIDs: list[str] = None,
+    unallowedIDs: list[str] = None,
 ) -> None:
     """Adds buildings from CityJSON dictionary data to dataset.
 
@@ -260,9 +261,12 @@ def load_buildings_from_dict(
     building_ids = []
 
     for building_id, value in cityjson_data["CityObjects"].items():
-        if allowedIDs is not None and building_id not in allowedIDs:
-            continue
-
+        if allowedIDs is not None:
+            if building_id not in allowedIDs:
+                continue
+        if unallowedIDs is not None:
+            if building_id in unallowedIDs:
+                continue
         if value["type"] == "Building":
             new_building = _process_building(
                 building_id,
@@ -349,6 +353,7 @@ def load_buildings_from_json_file(
     updatePartyWalls: bool = False,
     cityJSONSeq: bool = False,
     allowedIDs: list[str] = None,
+    unallowedIDs: list[str] = None,
 ) -> None:
     """Loads buildings from a CityJSON file into the dataset.
 
@@ -374,6 +379,7 @@ def load_buildings_from_json_file(
             ignoreExistingTransform=ignoreExistingTransform,
             updatePartyWalls=updatePartyWalls,
             allowedIDs=allowedIDs,
+            unallowedIDs=unallowedIDs,
         )
     else:
         with open(filepath, "r") as f:
@@ -395,6 +401,7 @@ def load_buildings_from_json_file(
             ignoreExistingTransform=ignoreExistingTransform,
             updatePartyWalls=updatePartyWalls,
             allowedIDs=allowedIDs,
+            unallowedIDs=unallowedIDs,
         )
 
 
