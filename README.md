@@ -41,7 +41,7 @@ We gratefully acknowledge the financial support by BMWK, promotional reference 0
 
 
 ## License
-Available under the MIT [License](License.md).
+Available under the Apache 2.0 [License](License.md).
 See the _Cite this repository_ function or the [CITATION.cff](CITATION.cff) for citation of this repository.
 
 ## Project status
@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.16 update License
 - 0.1.15 (un-)allowedIDs parameter for imports
 - 0.1.14 support for generic attributes on surfaces
 - 0.1.13 support for gen:doubleAttributes on buildings

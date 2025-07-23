@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "citydpc"
-version = "0.1.15"
+version = "0.1.16"
 authors = [
   { name="Maxim Shamovich", email="shamovich@e3d.rwth-aachen.de" },
   { name="Simon Raming", email="simon.raming@rwth-aachen.de" },
@@ -15,7 +15,7 @@ license = { file = "License.md", content-type = "text/markdown" }
 requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
