@@ -54,14 +54,14 @@ def getDataFrame(
         buildingData = _getInfoDictFromBuilding(building, wantedKeys)
         if includeBP:
             buildingData["isBP"] = False
-            data.append(buildingData.values())
+            data.append(buildingData)
             for buildingPart in building.get_building_parts():
                 buildingPartData = _getInfoDictFromBuilding(
                     buildingPart,
                     wantedKeys,
                 )
                 buildingPartData["isBP"] = True
-                data.append(buildingPartData.values())
+                data.append(buildingPartData)
         else:
             data.append(buildingData)
     if includeBP:
@@ -106,4 +106,6 @@ def _getInfoDictFromBuilding(
                 buildingData[key] = []
                 for buildingPart in building.get_building_parts():
                     buildingData[key].append(buildingPart.gml_id)
+            else:
+                buildingData[key] = None
     return buildingData

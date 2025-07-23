@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.17 fix datasetToDataframe mismatch
 - 0.1.16 update License
 - 0.1.15 (un-)allowedIDs parameter for imports
 - 0.1.14 support for generic attributes on surfaces
