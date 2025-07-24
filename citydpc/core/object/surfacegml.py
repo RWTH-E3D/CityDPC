@@ -3,7 +3,7 @@
 import numpy as np
 from numpy import linalg as LA
 from itertools import tee, chain
-from .exceptions import SurfacePlanarityWarning
+from .exceptions import SurfacePlanarityWarning, SurfaceCoorNumberWarning
 
 from citydpc.logger import logger
 from . import SurfaceConfig
@@ -64,9 +64,10 @@ class SurfaceGML(object):
         self.gml_surface = list(chain(*split_surface))
         if len(self.gml_surface) < 12:
             self.isSurface = False
-            logger.warning(
+            warn(
                 f"The surface {surface_id} - {polygon_id} has to few "
-                + "individual coordinates"
+                + "individual coordinates",
+                SurfaceCoorNumberWarning,
             )
             return
         self.isSurface = True

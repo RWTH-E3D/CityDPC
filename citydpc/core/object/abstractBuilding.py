@@ -6,6 +6,8 @@ if TYPE_CHECKING:
     from citydpc.core.object.geometry import GeometryGML
 
 from citydpc.core.object.address import AddressCollection
+from citydpc.util.citydpcWarnings import warn
+from .exceptions import SurfaceNotAddedToBuildingWarning
 from citydpc.logger import logger
 
 import numpy as np
@@ -229,14 +231,17 @@ class AbstractBuilding:
             gml:id of incorrect Surface
         """
         if self.is_building_part:
-            logger.warning(
-                f"Surface {surfaceID} of BuildingPart {self.gml_id} of Building "
-                + f"{self.parent_gml_id} is not a valid surface"
+            message = (
+                f"Surface {surfaceID} of BuildingPart {self.gml_id} "
+                + f"of Building {self.parent_gml_id} is not a valid surface"
             )
         else:
-            logger.warning(
-                f"Surface {surfaceID} of Building {self.gml_id} is not a valid surface"
+            message = (
+                f"Surface {surfaceID} of Building {self.gml_id} is not a"
+                + "valid surface"
             )
+
+        warn(message, SurfaceNotAddedToBuildingWarning)
 
     def create_legacy_surface_dicts(self) -> None:
         """creates the legacy surface dictionaries"""
