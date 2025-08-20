@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.19 fix measuredHeight assignment on CityJSON import
 - 0.1.18 more warning options
 - 0.1.17 fix datasetToDataframe mismatch
 - 0.1.16 update License

@@ -467,6 +467,7 @@ def _load_building_information_from_json(
             "storeyHeightsAboveGround",
             "storeysBelowGround",
             "storeyHeightsBelowGround",
+            "measuredHeight",
         ]
         for key, value in attributes.items():
             if key in objAttributes:
