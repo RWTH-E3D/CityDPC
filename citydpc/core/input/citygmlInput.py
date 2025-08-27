@@ -11,7 +11,10 @@ import numpy as np
 import matplotlib.path as mplP
 
 from citydpc.logger import logger
-from citydpc.tools.cityATB import _border_check, check_building_for_border_and_address
+from citydpc.tools.cityATB import (
+    _border_check,
+    check_building_for_border_and_address,
+)
 from citydpc.core.object.address import CoreAddress
 from citydpc.core.object.building import Building
 from citydpc.core.object.buildingPart import BuildingPart
@@ -20,6 +23,10 @@ from citydpc.core.object.fileUtil import CityFile
 from citydpc.core.object.geometry import GeometryGML
 from citydpc.tools.partywall import get_party_walls
 from . import CALC_ROOF_VOLUME_ON_IMPORT
+from citydpc.util.citydpcWarnings import warn
+from citydpc.core.object.exceptions import (
+    SurfaceSplitDueToMultipleSurfaceMembers,
+)
 
 
 def load_buildings_from_xml_file(
@@ -101,9 +108,13 @@ def load_buildings_from_xml_file(
     envelope_E = root.find("gml:boundedBy/gml:Envelope", nsmap)
     if envelope_E is not None:
         try:
-            fileSRSName = envelope_E.attrib["srsName"] 
-            lowerCorner = envelope_E.find("gml:lowerCorner", nsmap).text.split()
-            upperCorner = envelope_E.find("gml:upperCorner", nsmap).text.split()
+            fileSRSName = envelope_E.attrib["srsName"]
+            lowerCorner = envelope_E.find(
+                "gml:lowerCorner", nsmap
+            ).text.split()
+            upperCorner = envelope_E.find(
+                "gml:upperCorner", nsmap
+            ).text.split()
         except KeyError:
             if not ignoreRefSystem:
                 logger.error(
@@ -230,7 +241,9 @@ def load_buildings_from_xml_file(
     if gmlName_E is not None:
         gmlName = gmlName_E.text
 
-    notLoadedCityObjectMembers = len(cityObjectMembers_in_file) - len(building_ids)
+    notLoadedCityObjectMembers = len(cityObjectMembers_in_file) - len(
+        building_ids
+    )
 
     # store file related information
     newCFile = CityFile(
@@ -278,7 +291,9 @@ def _load_address_info_from_xml(
         logger.error("Namespace xal/xAL issue")
 
     if "{http://www.opengis.net/gml}id" in addressElement.attrib.keys():
-        address.gml_id = addressElement.attrib["{http://www.opengis.net/gml}id"]
+        address.gml_id = addressElement.attrib[
+            "{http://www.opengis.net/gml}id"
+        ]
 
     address.countryName = _get_text_of_xml_element(
         addressElement, nsmap, f".//{xal}:CountryName"
@@ -302,8 +317,10 @@ def _load_address_info_from_xml(
         addressElement, nsmap, f".//{xal}:PostalCodeNumber"
     )
     if address.check_address_is_empty():
-        logger.debug(f"Address of {building.gml_id} is empty, no mapable "
-                     + "address information found")
+        logger.debug(
+            f"Address of {building.gml_id} is empty, no mapable "
+            + "address information found"
+        )
         return
     building.addressCollection.add_address(address)
 
@@ -375,7 +392,9 @@ def _load_building_information_from_xml(
     if cityGMLversion in ["1.0", "2.0"]:
         lodNTI_E = buildingElement.find("bldg:lod2TerrainIntersection", nsmap)
         if lodNTI_E is None:
-            lodNTI_E = buildingElement.find("bldg:lod1TerrainIntersection", nsmap)
+            lodNTI_E = buildingElement.find(
+                "bldg:lod1TerrainIntersection", nsmap
+            )
         if lodNTI_E is not None:
             building.terrainIntersections = []
             curveMember_Es = lodNTI_E.findall(".//gml:curveMember", nsmap)
@@ -399,7 +418,7 @@ def _load_building_information_from_xml(
         building._calc_roof_volume()
     building.create_legacy_surface_dicts()
 
-    address_Es = buildingElement.findall('bldg:address', nsmap)
+    address_Es = buildingElement.findall("bldg:address", nsmap)
     for address_E in address_Es:
         if cityGMLversion in ["1.0", "2.0"]:
             _load_address_info_from_xml(building, address_E, nsmap)
@@ -427,7 +446,9 @@ def _get_building_attributes_from_xml_element(
         version of the CityGML file
     """
 
-    building.usage = _get_text_of_xml_element(buildingElement, nsmap, "bldg:usage")
+    building.usage = _get_text_of_xml_element(
+        buildingElement, nsmap, "bldg:usage"
+    )
 
     building.function = _get_text_of_xml_element(
         buildingElement, nsmap, "bldg:function"
@@ -477,7 +498,9 @@ def _get_building_attributes_from_xml_element(
         if height_E := buildingElement.find("con:height", nsmap):
             if height2_E := height_E.find("con:Height", nsmap):
                 if (
-                    _get_text_of_xml_element(height2_E, nsmap, "con:highReference")
+                    _get_text_of_xml_element(
+                        height2_E, nsmap, "con:highReference"
+                    )
                     == "highestRoofEdge"
                     and _get_text_of_xml_element(
                         height2_E, nsmap, "con:heightReference"
@@ -525,9 +548,13 @@ def _get_building_surfaces_from_xml_element(
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
-                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                coordinates = _get_polygon_coordinates_from_element(
+                    poly_E, nsmap
+                )
                 ground_id = poly_id if poly_id else "citydpc_poly_0"
-                newSurface = SurfaceGML(coordinates, ground_id, "GroundSurface", None)
+                newSurface = SurfaceGML(
+                    coordinates, ground_id, "GroundSurface", None
+                )
                 if newSurface.isSurface:
                     geometry.add_surface(newSurface)
                 else:
@@ -541,9 +568,13 @@ def _get_building_surfaces_from_xml_element(
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
-                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                coordinates = _get_polygon_coordinates_from_element(
+                    poly_E, nsmap
+                )
                 roof_id = poly_id if poly_id else "citydpc_poly_0"
-                newSurface = SurfaceGML(coordinates, roof_id, "RoofSurface", None)
+                newSurface = SurfaceGML(
+                    coordinates, roof_id, "RoofSurface", None
+                )
                 if newSurface.isSurface:
                     building.remove_geometry(geomKey)
                     building._warn_invalid_surface(roof_id)
@@ -563,7 +594,9 @@ def _get_building_surfaces_from_xml_element(
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
-                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                coordinates = _get_polygon_coordinates_from_element(
+                    poly_E, nsmap
+                )
                 poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
@@ -636,7 +669,9 @@ def _get_building_surfaces_from_xml_element(
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
-                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                coordinates = _get_polygon_coordinates_from_element(
+                    poly_E, nsmap
+                )
                 poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
@@ -658,7 +693,9 @@ def _get_building_surfaces_from_xml_element(
                 poly_id = _get_attrib_of_xml_element(
                     poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
                 )
-                coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+                coordinates = _get_polygon_coordinates_from_element(
+                    poly_E, nsmap
+                )
                 poly_id = poly_id if poly_id else f"citydpc_poly_{i}"
                 newSurface = SurfaceGML(coordinates, poly_id)
                 if newSurface.isSurface:
@@ -779,31 +816,51 @@ def _add_surface_from_element(
         id = _get_attrib_of_xml_element(
             surface_E, nsmap, ".", "{http://www.opengis.net/gml}id"
         )
-        poly_E = surface_E.find(".//gml:Polygon", nsmap)
-        poly_id = _get_attrib_of_xml_element(
-            poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
-        )
-        coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
-        used_id = id if id else f"citydpc_{id_str}_{i}"
-        newSurface = SurfaceGML(
-            coordinates, used_id, target_str.rsplit(":")[-1], poly_id
-        )
-        if newSurface.isSurface:
-            genStrings = surface_E.findall("gen:stringAttribute", nsmap)
-            for i in genStrings:
-                key = i.attrib["name"]
-                newSurface.attributes[key] = _get_text_of_xml_element(
-                    i, nsmap, "gen:value"
+        surfaceMember_Es = surface_E.findall(".//gml:surfaceMember", nsmap)
+        for j, surfaceMember_E in enumerate(surfaceMember_Es):
+
+            poly_E = surfaceMember_E.find("gml:Polygon", nsmap)
+            poly_id = _get_attrib_of_xml_element(
+                poly_E, nsmap, ".", "{http://www.opengis.net/gml}id"
+            )
+            coordinates = _get_polygon_coordinates_from_element(poly_E, nsmap)
+            # we are splitting surfaces consisting of multiple surfaceMembers
+            # (for example found in curved walls) into individual surfaces by
+            # using the surface id and the member index
+            if len(surfaceMember_Es) == 1:
+                if id:
+                    used_id = id
+                else:
+                    used_id = f"citydpc_{id_str}_{i}"
+            else:
+                if id:
+                    used_id = f"{id}_{j}"
+                else:
+                    used_id = f"citydpc_{id_str}_{i}_{j}"
+                warn(
+                    f"Surface {used_id} consists of multiple surface members. "
+                    + "Splitting for simplicity.",
+                    SurfaceSplitDueToMultipleSurfaceMembers,
                 )
-            genDouble = surface_E.findall("gen:doubleAttribute", nsmap)
-            for i in genDouble:
-                key = i.attrib["name"]
-                newSurface.attributes[key] = _get_float_of_xml_element(
-                    i, nsmap, "gen:value"
-                )
-            geometry.add_surface(newSurface)
-        else:
-            building._warn_invalid_surface(used_id)
+            newSurface = SurfaceGML(
+                coordinates, used_id, target_str.rsplit(":")[-1], poly_id
+            )
+            if newSurface.isSurface:
+                genStrings = surface_E.findall("gen:stringAttribute", nsmap)
+                for i in genStrings:
+                    key = i.attrib["name"]
+                    newSurface.attributes[key] = _get_text_of_xml_element(
+                        i, nsmap, "gen:value"
+                    )
+                genDouble = surface_E.findall("gen:doubleAttribute", nsmap)
+                for i in genDouble:
+                    key = i.attrib["name"]
+                    newSurface.attributes[key] = _get_float_of_xml_element(
+                        i, nsmap, "gen:value"
+                    )
+                geometry.add_surface(newSurface)
+            else:
+                building._warn_invalid_surface(used_id)
 
 
 def _get_text_of_xml_element(

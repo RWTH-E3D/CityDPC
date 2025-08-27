@@ -20,3 +20,15 @@ class SurfaceNotAddedToBuildingWarning(SurfaceWarning):
     """Warning issued when a surface is not being added to a building(part)"""
 
     pass
+
+
+class CityGMLInputWarning(UserWarning):
+    """Warning issued when there is an issue with the CityGML input."""
+
+    pass
+
+
+class SurfaceSplitDueToMultipleSurfaceMembers(CityGMLInputWarning):
+    """Warning issued when a surface is split due to multiple surfaceMembers"""
+
+    pass
