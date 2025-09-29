@@ -50,6 +50,7 @@ Currently under active development.
 
 ## Latest Changes
 
+- 0.1.21 CityGML - allowed_surface_types parameter and multiprocessing
 - 0.1.20 CityGML - read all surfaceMember elements
 - 0.1.19 fix measuredHeight assignment on CityJSON import
 - 0.1.18 more warning options
