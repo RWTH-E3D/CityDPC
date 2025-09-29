@@ -41,7 +41,7 @@ def _process_city_object_member_worker(args):
     args : tuple
         Contains (xml_string, nsmap, cityGMLversion, allowedIDs, unallowedIDs,
                 borderCoordinates, addressRestriciton,
-                border_coordinates_for_path)
+                border_coordinates_for_path, allowed_surface_types)
 
     Returns
     -------
@@ -58,6 +58,7 @@ def _process_city_object_member_worker(args):
         borderCoordinates,
         addressRestriciton,
         border_coordinates_for_path,
+        allowed_surface_types,
     ) = args
 
     # recreate the border path
@@ -89,7 +90,11 @@ def _process_city_object_member_worker(args):
 
         new_building = Building(building_id)
         _load_building_information_from_xml(
-            building_E, nsmap, new_building, cityGMLversion
+            building_E,
+            nsmap,
+            new_building,
+            cityGMLversion,
+            allowed_surface_types,
         )
 
         # process building parts
@@ -114,7 +119,11 @@ def _process_city_object_member_worker(args):
                 continue
             new_building_part = BuildingPart(bp_id, building_id)
             _load_building_information_from_xml(
-                bp_E, nsmap, new_building_part, cityGMLversion
+                bp_E,
+                nsmap,
+                new_building_part,
+                cityGMLversion,
+                allowed_surface_types,
             )
             new_building.building_parts.append(new_building_part)
 
@@ -140,6 +149,7 @@ def load_buildings_from_xml_file(
     allowedIDs: list[str] = None,
     unallowedIDs: list[str] = None,
     use_multiprocessing: bool = True,
+    allowed_surface_types: list[str] = None,
 ):
     """adds buildings from filepath to the dataset
 
@@ -167,6 +177,10 @@ def load_buildings_from_xml_file(
     use_multiprocessing : bool, optional
         flag to enable multiprocessing for faster loading of large files,
         by default True. Set to False to use sequential processing.
+    allowed_surface_types : list[str], optional
+        list of surface types to load (e.g., ["RoofSurface", "WallSurface"]),
+        by default None (loads all surface types). Surface types include:
+        "RoofSurface", "WallSurface", "GroundSurface", "ClosureSurface"
     """
     if allowedIDs is not None:
         if len(allowedIDs) == 0:
@@ -304,6 +318,7 @@ def load_buildings_from_xml_file(
             borderCoordinates,
             addressRestriciton,
             border_coordinates_for_path,
+            allowed_surface_types,
         )
         worker_args.append(args)
 
@@ -519,6 +534,7 @@ def _load_building_information_from_xml(
     nsmap: dict,
     building: AbstractBuilding,
     cityGMLversion: str,
+    allowed_surface_types: list[str] = None,
 ):
     """loads building information from xml element
 
@@ -532,10 +548,12 @@ def _load_building_information_from_xml(
         either Building or BuildingPart object to add info to
     cityGMLversion : str
         version of the CityGML file
+    allowed_surface_types : list[str], optional
+        list of surface types to load, by default None (loads all)
     """
     logger.debug(f"Loading building information from {building.gml_id}")
     _get_building_surfaces_from_xml_element(
-        building, buildingElement, nsmap, cityGMLversion
+        building, buildingElement, nsmap, cityGMLversion, allowed_surface_types
     )
 
     _get_building_attributes_from_xml_element(
@@ -673,6 +691,7 @@ def _get_building_surfaces_from_xml_element(
     element: ET.Element,
     nsmap: dict,
     cityGMLversion: str,
+    allowed_surface_types: list[str] = None,
 ) -> None:
     """gathers surfaces from element and categories them
 
@@ -779,34 +798,24 @@ def _get_building_surfaces_from_xml_element(
 
         building.lod = "2"
 
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "bldg:boundedBy/bldg:WallSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "bldg:boundedBy/bldg:RoofSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "bldg:boundedBy/bldg:GroundSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "bldg:boundedBy/bldg:ClosureSurface",
-            geometry,
-        )
+        for surfaceTye in [
+            "WallSurface",
+            "RoofSurface",
+            "GroundSurface",
+            "ClosureSurface",
+        ]:
+            if (
+                allowed_surface_types is not None
+                and surfaceTye not in allowed_surface_types
+            ):
+                continue
+            _add_surface_from_element(
+                building,
+                element,
+                nsmap,
+                f"bldg:boundedBy/bldg:{surfaceTye}",
+                geometry,
+            )
 
         return
 
@@ -873,34 +882,25 @@ def _get_building_surfaces_from_xml_element(
 
         building.lod = "2"
 
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "boundary/con:WallSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "boundary/con:RoofSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "boundary/con:GroundSurface",
-            geometry,
-        )
-        _add_surface_from_element(
-            building,
-            element,
-            nsmap,
-            "boundary/con:ClosureSurface",
-            geometry,
-        )
+        for surfaceTye in [
+            "WallSurface",
+            "RoofSurface",
+            "GroundSurface",
+            "ClosureSurface",
+        ]:
+            if (
+                allowed_surface_types is not None
+                and surfaceTye not in allowed_surface_types
+            ):
+                continue
+            _add_surface_from_element(
+                building,
+                element,
+                nsmap,
+                f"boundedBy/con:{surfaceTye}",
+                geometry,
+            )
+
         return
     else:
         logger.error(f"CityGML version {cityGMLversion} not supported")
