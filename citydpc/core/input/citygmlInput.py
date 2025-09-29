@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 import lxml.etree as ET
 import numpy as np
 import matplotlib.path as mplP
+import multiprocessing as mp
 
 from citydpc.logger import logger
 from citydpc.tools.cityATB import (
@@ -29,6 +30,105 @@ from citydpc.core.object.exceptions import (
 )
 
 
+def _process_city_object_member_worker(args):
+    """Worker function for multiprocessing that processes a cityObjectMember.
+
+    This function is designed to be used with multiprocessing.Pool and needs
+    to be pickleable, so it takes a single args tuple.
+
+    Parameters
+    ----------
+    args : tuple
+        Contains (xml_string, nsmap, cityGMLversion, allowedIDs, unallowedIDs,
+                borderCoordinates, addressRestriciton,
+                border_coordinates_for_path)
+
+    Returns
+    -------
+    dict or None
+        Dictionary of building_id -> Building objects if buildings found,
+        None otherwise
+    """
+    (
+        xml_string,
+        nsmap,
+        cityGMLversion,
+        allowedIDs,
+        unallowedIDs,
+        borderCoordinates,
+        addressRestriciton,
+        border_coordinates_for_path,
+    ) = args
+
+    # recreate the border path
+    border = None
+    if border_coordinates_for_path is not None:
+        border = mplP.Path(np.array(border_coordinates_for_path))
+
+    # parse the XML string back to element
+    parser = ET.XMLParser(remove_blank_text=True, encoding="UTF-8")
+    cityObjectMember_E = ET.fromstring(xml_string, parser)
+
+    buildings_in_com = cityObjectMember_E.findall("bldg:Building", nsmap)
+
+    if not buildings_in_com:
+        return None
+
+    buildings_dict = {}
+
+    for building_E in buildings_in_com:
+        building_id = building_E.attrib["{http://www.opengis.net/gml}id"]
+
+        # check ID restrictions
+        if allowedIDs is not None:
+            if building_id not in allowedIDs:
+                continue
+        if unallowedIDs is not None:
+            if building_id in unallowedIDs:
+                continue
+
+        new_building = Building(building_id)
+        _load_building_information_from_xml(
+            building_E, nsmap, new_building, cityGMLversion
+        )
+
+        # process building parts
+        bps_in_bldg = building_E.findall(
+            "bldg:consistsOfBuildingPart/bldg:BuildingPart", nsmap
+        )
+        for bp_E in bps_in_bldg:
+            if "{http://www.opengis.net/gml}id" in bp_E.attrib.keys():
+                bp_id = bp_E.attrib["{http://www.opengis.net/gml}id"]
+            elif (
+                f"{building_id}_part_{len(new_building.building_parts)}"
+                not in [x.gml_id for x in new_building.building_parts]
+            ):
+                bp_id = (
+                    f"{building_id}_part_{len(new_building.building_parts)}"
+                )
+            else:
+                logger.error(
+                    f"buildingPart of {building_id} has no id "
+                    + "and automatic id is already in use"
+                )
+                continue
+            new_building_part = BuildingPart(bp_id, building_id)
+            _load_building_information_from_xml(
+                bp_E, nsmap, new_building_part, cityGMLversion
+            )
+            new_building.building_parts.append(new_building_part)
+
+        # check border and address restrictions
+        if not check_building_for_border_and_address(
+            new_building, borderCoordinates, addressRestriciton, border
+        ):
+            continue
+
+        buildings_dict[building_id] = new_building
+
+    return buildings_dict if buildings_dict else None
+
+
 def load_buildings_from_xml_file(
     dataset: Dataset,
     filepath: str,
@@ -39,6 +139,7 @@ def load_buildings_from_xml_file(
     updatePartyWalls: bool = False,
     allowedIDs: list[str] = None,
     unallowedIDs: list[str] = None,
+    use_multiprocessing: bool = True,
 ):
     """adds buildings from filepath to the dataset
 
@@ -47,22 +148,25 @@ def load_buildings_from_xml_file(
     filepath : str
         path to .gml or .xml CityGML file
     borderCoordinates : list, optional
-        list of coordinates ([x0, y0], [x1, y1], ..) in fileCRS to restrict the dataset,
-        by default None
+        list of coordinates ([x0, y0], [x1, y1], ..) in fileCRS to restrict the
+        dataset,by default None
     addressRestriciton : dict, optional
         dictionary of address values to restrict the dataset, by default None
     ignoreRefSystem : bool, optional
-        flag to ignore comparission between reference system name in new file and
-        dataset, by default False
+        flag to ignore comparission between reference system name in new file
+        and dataset, by default False
     ignoreExistingTransform : bool, optional
-        flag to ignore comparission between transform object in new file and dataset,
-        by default False
+        flag to ignore comparission between transform object in new file and
+        dataset, by default False
     updatePartyWalls : bool, optional
         flag to update party walls, by default False
     allowedIDs : list[str], optional
         list of building ids to restrict the dataset, by default None
     unallowedIDs : list[str], optional
         list of building ids to remove from the dataset, by default None
+    use_multiprocessing : bool, optional
+        flag to enable multiprocessing for faster loading of large files,
+        by default True. Set to False to use sequential processing.
     """
     if allowedIDs is not None:
         if len(allowedIDs) == 0:
@@ -179,60 +283,109 @@ def load_buildings_from_xml_file(
 
     # find all buildings within file
     cityObjectMembers_in_file = root.findall("core:cityObjectMember", nsmap)
+
+    # prepare arguments for multiprocessing
+    worker_args = []
+    border_coordinates_for_path = (
+        borderCoordinates
+        if borderCoordinates and len(borderCoordinates) > 2
+        else None
+    )
+
+    for cityObjectMember_E in cityObjectMembers_in_file:
+        # XML element to string for serialization
+        xml_string = ET.tostring(cityObjectMember_E, encoding="unicode")
+        args = (
+            xml_string,
+            nsmap,
+            cityGMLversion,
+            allowedIDs,
+            unallowedIDs,
+            borderCoordinates,
+            addressRestriciton,
+            border_coordinates_for_path,
+        )
+        worker_args.append(args)
+
+    # process in parallel using multiprocessing
+    processed_buildings = {}
+    if worker_args:
+        try:
+            # use number of CPU cores, but 8 max for testing
+            num_workers = min(mp.cpu_count(), len(worker_args), 8)
+
+            # make sure we want to use multiprocessing and we can
+            if (
+                use_multiprocessing
+                and len(worker_args) > 1
+                and num_workers > 1
+                and hasattr(mp, "current_process")
+                and mp.current_process().name == "MainProcess"
+            ):
+
+                logger.info(
+                    f"Processing {len(worker_args)} cityObjectMembers using "
+                    f"{num_workers} workers"
+                )
+
+                # Set start method to fork if available (more reliable)
+                if "fork" in mp.get_all_start_methods():
+                    ctx = mp.get_context("fork")
+                else:
+                    ctx = mp.get_context()
+
+                with ctx.Pool(processes=num_workers) as pool:
+                    results = pool.map(
+                        _process_city_object_member_worker, worker_args
+                    )
+
+                    for result in results:
+                        if result is not None:
+                            processed_buildings.update(result)
+            else:
+                # fallback to sequential processing
+                if not use_multiprocessing:
+                    logger.info(
+                        f"Processing {len(worker_args)} cityObjectMembers "
+                        "sequentially (multiprocessing disabled)"
+                    )
+                else:
+                    logger.info(
+                        f"Processing {len(worker_args)} cityObjectMembers "
+                        "sequentially"
+                    )
+                for args in worker_args:
+                    result = _process_city_object_member_worker(args)
+                    if result is not None:
+                        processed_buildings.update(result)
+
+        except Exception as e:
+            logger.warning(
+                f"Multiprocessing failed ({e}), falling back to sequential "
+                "processing"
+            )
+            # fallback to sequential processing on error
+            processed_buildings = {}
+            for args in worker_args:
+                result = _process_city_object_member_worker(args)
+                if result is not None:
+                    processed_buildings.update(result)
+
+    # add buildings to dataset, checking for duplicates
+    for building_id, new_building in processed_buildings.items():
+        if building_id in dataset.buildings.keys():
+            logger.warning(
+                f"Doubling of building id {building_id} "
+                + "Only first mention will be considered"
+            )
+            continue
+        dataset.buildings[building_id] = new_building
+        building_ids.append(building_id)
+
+    # handle non building cityObjectMembers
     for cityObjectMember_E in cityObjectMembers_in_file:
         buildings_in_com = cityObjectMember_E.findall("bldg:Building", nsmap)
-
-        for building_E in buildings_in_com:
-            building_id = building_E.attrib["{http://www.opengis.net/gml}id"]
-            if allowedIDs is not None:
-                if building_id not in allowedIDs:
-                    continue
-            if unallowedIDs is not None:
-                if building_id in unallowedIDs:
-                    continue
-            new_building = Building(building_id)
-            _load_building_information_from_xml(
-                building_E, nsmap, new_building, cityGMLversion
-            )
-
-            bps_in_bldg = building_E.findall(
-                "bldg:consistsOfBuildingPart/bldg:BuildingPart", nsmap
-            )
-            for bp_E in bps_in_bldg:
-                if "{http://www.opengis.net/gml}id" in bp_E.attrib.keys():
-                    bp_id = bp_E.attrib["{http://www.opengis.net/gml}id"]
-                elif (
-                    f"{building_id}_part_{len(new_building.building_parts)}"
-                    not in [x.gml_id for x in new_building.building_parts]
-                ):
-                    bp_id = f"{building_id}_part_{len(new_building.building_parts)}"
-                else:
-                    logger.error(
-                        f"buildingPart of {building_id} has no id "
-                        + "and automatic id is already in use"
-                    )
-                    continue
-                new_building_part = BuildingPart(bp_id, building_id)
-                _load_building_information_from_xml(
-                    bp_E, nsmap, new_building_part, cityGMLversion
-                )
-                new_building.building_parts.append(new_building_part)
-
-            if building_id in dataset.buildings.keys():
-                logger.warning(
-                    f"Doubling of building id {building_id} "
-                    + "Only first mention will be considered"
-                )
-                continue
-
-            if not check_building_for_border_and_address(
-                new_building, borderCoordinates, addressRestriciton, border
-            ):
-                continue
-
-            dataset.buildings[building_id] = new_building
-            building_ids.append(building_id)
-        else:
+        if not buildings_in_com:
             dataset.otherCityObjectMembers.append(cityObjectMember_E)
 
     # find gmlName
