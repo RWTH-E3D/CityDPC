@@ -13,6 +13,7 @@ from citydpc.util.envelope import (
     update_dataset_min_max_from_min_max,
     update_min_max_from_min_max,
 )
+from . import ExportConfig
 
 import json
 import math
@@ -80,7 +81,12 @@ def write_cityjson_file(
     }
 
     cityjson["metadata"] = __create_metadata_dict(
-        dataset, identifier, pointOfContact, referenceDate, referenceSystem, title
+        dataset,
+        identifier,
+        pointOfContact,
+        referenceDate,
+        referenceSystem,
+        title,
     )
 
     if dataset.transform != {}:
@@ -99,7 +105,10 @@ def write_cityjson_file(
         saveGeoExtToBuildings,
     )
 
-    cityjson["metadata"]["geographicalExtent"] = [*dataset._minimum, *dataset._maximum]
+    cityjson["metadata"]["geographicalExtent"] = [
+        *dataset._minimum,
+        *dataset._maximum,
+    ]
 
     cityjson["transform"] = transfromNew
 
@@ -197,7 +206,7 @@ def __create_cityobjects_dict(
     transfromNew: dict,
     vertices: list[list[float]],
     cityJSONSeq: bool,
-    saveGeographicalExtent: bool = True
+    saveGeographicalExtent: bool = True,
 ) -> tuple[dict | list, list[list[float]]]:
     """creates the cityobject dict for the cityjson file
 
@@ -446,7 +455,9 @@ def __create_geometry_dict(
             solidValList.append(semanticsIndex)
         values.append(solidValList)
         boundaries.append(solidList)
-    elif geometry.type == "MultiSurface" or geometry.type == "CompositeSurface":
+    elif (
+        geometry.type == "MultiSurface" or geometry.type == "CompositeSurface"
+    ):
         for surface in geometry.surfaces:
             gMin, gMax = update_min_max_from_surface(gMin, gMax, surface)
             surfaceVerts = __surface_to_vertices(
@@ -520,7 +531,10 @@ def __update_surfaces_dict(surface: SurfaceGML, surfaces: list[dict]) -> int:
     surface_dict = surface.attributes.copy()
 
     surface_dict["type"] = surface.surface_type
-    if not surface.surface_id.startswith("citydpc_"):
+    if (
+        not surface.surface_id.startswith("citydpc_")
+        or ExportConfig.EXPORT_CITYDPC_IDS
+    ):
         surface_dict["id"] = surface.surface_id
 
     for i, presentDict in enumerate(surfaces):
